@@ -13,9 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decision-ready lists per campaign: **winners** (high conversion value + ROAS at/above the campaign's bar —
   keep / scale) and **drains** (high cost but ~0 value or ROAS well below bar — exclude / bid-down, with the
   $/mo total). An operator can now see at a glance which states to protect vs cut, instead of a flat spend list.
-
-### Changed
-
 - Hardened the cold-start (no-data) path: every data-pulling skill — `measurement`, `plan`, `optimizer`,
   `tracker` — now explicitly routes to `setup` when `account-context.yaml` is missing, matching the guard
   `audit` and the router already had. Verified end-to-end that a brand-new user with nothing connected is
@@ -45,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `money_leak_report.py` now **fails safe on un-pulled dimensions** instead of fabricating findings. A bundle
   missing `channel`/`assets`/`negatives` previously rendered a fake "Channel mix GOOD 0%", "Headlines WATCH",
   and "no negatives → attach lists" — confident verdicts on absent data. Now each renders **VERIFY / "not
-  pulled"** (channel for PMax is correctly marked "not API-exposed"). This enforces the suite's no-fabricate
+  pulled"**. This enforces the suite's no-fabricate
   rule at the RENDER layer, not just the pull layer. Surfaced when a live DTK audit shipped an incomplete
   bundle and the report still showed (false) green/red findings.
 - `money_leak_report.py` extension detection used a wrong `AssetFieldType` enum (snippet=12, price=17). The
