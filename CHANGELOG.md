@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `money_leak_report.py` now **fails safe on un-pulled dimensions** instead of fabricating findings. A bundle
+  missing `channel`/`assets`/`negatives` previously rendered a fake "Channel mix GOOD 0%", "Headlines WATCH",
+  and "no negatives → attach lists" — confident verdicts on absent data. Now each renders **VERIFY / "not
+  pulled"** (channel for PMax is correctly marked "not API-exposed"). This enforces the suite's no-fabricate
+  rule at the RENDER layer, not just the pull layer. Surfaced when a live DTK audit shipped an incomplete
+  bundle and the report still showed (false) green/red findings.
 - `money_leak_report.py` extension detection used a wrong `AssetFieldType` enum (snippet=12, price=17). The
   live API returns **STRUCTURED_SNIPPET=27, PRICE=26**, so real snippet/price assets were missed and the
   generator emitted false "snippets 0" findings. Corrected the enum + added `SNIPPET_FT`/`PRICE_FT` constants.

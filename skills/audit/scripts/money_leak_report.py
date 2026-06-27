@@ -447,10 +447,16 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         charts.append(ccard("Budget pacing",budget_v,ring_svg(util),cnt,action=bud_act))
         chs=defaultdict(float)
         for r2 in chan_c.get(cid,[]): chs[r2.get("ad_network_type")]+=d(r2.get("cost_micros"))
-        cs=sum(v for n,v in chs.items() if n in (2,3)); ot=sum(v for n,v in chs.items() if n not in (2,3)); ctot=cs+ot or 1
-        channel_v="WATCH" if "channel" in dimset else "GOOD"
-        oth=" · ".join(f"{netname(n)} ${v:.0f}" for n,v in sorted(chs.items(),key=lambda x:-x[1]) if n not in (2,3))[:90]
-        charts.append(ccard("Channel mix",channel_v,donut2(cs/ctot,f"{cs/ctot*100:.0f}%","Search"),cnt,cap=("other "+f"{ot/ctot*100:.1f}% — "+esc(oth)) if ot>0 else "all on Search/Shopping"))
+        if not chs:
+            # No channel rows for this campaign: NOT pulled, or PMax (Google doesn't expose its channel split
+            # via API). Never render a fabricated "0% / GOOD" donut — mark it for what it is.
+            note=("PMax — channel split not API-exposed; verify in UI." if is_pmax(c) else "Channel split not pulled — verify in UI.")
+            charts.append(ccard("Channel mix","VERIFY",donut2(0,"—","n/a"),cnt,cap=note))
+        else:
+            cs=sum(v for n,v in chs.items() if n in (2,3)); ot=sum(v for n,v in chs.items() if n not in (2,3)); ctot=cs+ot or 1
+            channel_v="WATCH" if "channel" in dimset else "GOOD"
+            oth=" · ".join(f"{netname(n)} ${v:.0f}" for n,v in sorted(chs.items(),key=lambda x:-x[1]) if n not in (2,3))[:90]
+            charts.append(ccard("Channel mix",channel_v,donut2(cs/ctot,f"{cs/ctot*100:.0f}%","Search"),cnt,cap=("other "+f"{ot/ctot*100:.1f}% — "+esc(oth)) if ot>0 else "all on Search/Shopping"))
         dvv=defaultdict(lambda:[0.0,0.0])
         for r2 in dev_c.get(cid,[]):
             k=r2.get("device"); dvv[k][0]+=d(r2.get("cost_micros")); dvv[k][1]+=float(r2.get("conversions_value",0) or 0)
@@ -519,9 +525,13 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
             crows.append(vrow(thm_v,"Search themes",f"{thm} — "+esc(", ".join(thms[:6])),cnt,action=("Add intent-led themes." if thm<5 else "")))
         heads=sorted([x for x in asset_c.get(cid,[]) if x.get("field_type")==2],key=lambda x:-d(x.get("cost_micros")))
         hburn=[x for x in heads if d(x.get("cost_micros"))>=ASSET_MIN and float(x.get("conversions",0) or 0)==0]
-        hl_v="WATCH" if hburn else ("GOOD" if heads else "WATCH")
-        hl_txt="; ".join(f'"{esc(_clean(x.get("text","")))}" ${d(x.get("cost_micros")):.0f}' for x in heads[:4]) or "no headline assets pulled"
-        crows.append(vrow(hl_v,"Headlines",hl_txt,cnt,action=(f"{len(hburn)} headlines spent at 0 conv — read pattern, test via Asset Experiments." if hburn else "")))
+        if not heads and "assets" not in b:
+            # not pulled — never render as a GOOD/WATCH verdict on absent data
+            crows.append(vrow("VERIFY","Headlines","asset text not pulled — verify in UI",cnt,action="Pull asset_group_asset / ad_group_ad assets to assess."))
+        else:
+            hl_v="WATCH" if hburn else ("GOOD" if heads else "WATCH")
+            hl_txt="; ".join(f'"{esc(_clean(x.get("text","")))}" ${d(x.get("cost_micros")):.0f}' for x in heads[:4]) or "none pulled"
+            crows.append(vrow(hl_v,"Headlines",hl_txt,cnt,action=(f"{len(hburn)} headlines spent at 0 conv — read pattern, test via Asset Experiments." if hburn else "")))
         descs=desc_c.get(cid,[])
         if descs or "descriptions" in b:
             crows.append(vrow("GOOD" if descs else "WATCH","Descriptions",(esc("; ".join('"'+_clean(x.get("text",""))+'"' for x in descs[:2]))[:140] if descs else "none pulled"),cnt))
@@ -532,6 +542,9 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         for r2 in ng: bysrc[r2.get("source","?")]+=1
         if "negatives" in b:
             nprows.append(vrow("GOOD" if bysrc else "WATCH","Negatives &amp; brand blocks",(esc(" · ".join(f"{s} ({n})" for s,n in list(bysrc.items())[:6])) if bysrc else "none for this campaign"),cnt,action=("" if bysrc else "Attach negative + brand-exclusion lists.")))
+        else:
+            # GUARD-2: never claim "no negatives" without having pulled campaign_criterion + shared_set + brand-list.
+            nprows.append(vrow("VERIFY","Negatives &amp; brand blocks","not pulled — verify shared lists + brand exclusions",cnt,action="Pull campaign_shared_set → shared_criterion AND brand_list exclusions before judging coverage."))
         prf=[f for f in cfind.get(cid,[]) if f["dim"]=="products"]
         if prf:
             nprows.append(vrow("WATCH","0-conv product burners",esc(prf[0]["title"]),cnt,action="Check Merchant: OOS → restock/exclude; in-stock → price/intent."))
