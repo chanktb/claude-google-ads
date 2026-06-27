@@ -19,7 +19,7 @@ A missing source is flagged `UNVERIFIED` in the output, never fabricated.
   Keep it OUTSIDE the plugin repo — business data never lives in the plugin.
 
 ## 2. Install
-- **Published:** `/plugin install claude-google-ads@<owner>/claude-google-ads` → the `/google-ads` command
+- **Published:** `/plugin install claude-google-ads@chanktb/claude-google-ads` → the `/google-ads` command
   and all skills become available.
 - **Local / dev (current):** add this project as a local plugin, or copy `skills/` into `~/.claude/skills/`.
   Or simply ask Claude in chat to run a skill against your folder (Claude reads the skill + runs the scripts).

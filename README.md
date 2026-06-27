@@ -19,9 +19,8 @@ Built by [Khue Tran](https://khuetran.com).
 
 ## Status
 
-🚧 **In development.** Building skill-by-skill in this workspace. Will be published to GitHub for
-public install once stable. See [`docs/STATE.md`](docs/STATE.md) for current progress and
-[`docs/PLAN.md`](docs/PLAN.md) for the build order.
+**Published and stable** (v0.1.0). Installable from GitHub — see [Install](#install) below. Active
+development continues; see [`CHANGELOG.md`](CHANGELOG.md) for release history and what's new in each version.
 
 ## Architecture
 
@@ -90,8 +89,6 @@ Each is a standalone slash command (e.g. `/google-ads-audit`); `/google-ads` rou
 4. **`account-context.yaml` is the single source of business truth.** No business detail is hardcoded
    in any skill.
 
-See [`docs/DECISIONS.md`](docs/DECISIONS.md) for rationale.
-
 ## Prerequisites — connect your data FIRST
 
 The suite runs on **real account data, never guesses.** Set these up before using the skills (`setup`
@@ -110,10 +107,10 @@ Without **Google Ads** nothing runs. Without **Store / Merchant / GA4** the core
 Google Ads MCP), but AOV, true-ROAS, feed health, and the value cross-check render `UNVERIFIED` until you
 connect them. `/google-ads` checks this up front and guides you.
 
-## Install (after publish)
+## Install
 
 ```
-/plugin install claude-google-ads@<owner>/claude-google-ads
+/plugin install claude-google-ads@chanktb/claude-google-ads
 ```
 
 Then run `/google-ads` — it checks your connections, runs `setup` if there's no context, and points you to

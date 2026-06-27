@@ -92,5 +92,5 @@ it to **return raw, not conclude**. Each sub-skill carries its own per-STEP tier
 
 ## Notes
 - The router orchestrates; each sub-skill reads the same `account-context.yaml` and writes to the working
-  directory. Business data never lives in the plugin (see docs/DEV.md).
+  directory. Business data never lives in the plugin — it stays in your local `account-context.yaml`.
 - Sub-skills are invoked by their namespaced names (`claude-google-ads:setup`, `claude-google-ads:audit`, …).
