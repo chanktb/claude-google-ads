@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Geo drains now surface ZERO-value spend, and PMax bid-adjust is stated correctly.** Drains previously
+  hid states with spend but $0 conversion value (a `cost < $50` floor dropped them) and ranked only by raw
+  cost — so pure-waste states could fall off the list; now 0-value states are included at a low floor, labeled
+  "0 value (100% waste)", and the list ranks by dollars WASTED. Also corrected guidance across the geo + daypart
+  findings and `change-set` / `diagnostic-playbook`: **location AND ad-schedule bid adjustments are supported on
+  PMax** (the campaign criterion `bid_modifier` is settable) — it is NOT exclusion-only. (Per CEO correction on a live review.)
 - **Geo card redesigned to be actionable.** Replaced the flat "Geo — top spend by ROAS" list with two
   decision-ready lists per campaign: **winners** (high conversion value + ROAS at/above the campaign's bar —
   keep / scale) and **drains** (high cost but ~0 value or ROAS well below bar — exclude / bid-down, with the

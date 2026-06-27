@@ -246,7 +246,7 @@ def main():
             lst="; ".join(f"{nm} ${co:,.0f}@{'0conv' if z else f'{rr:.2f}x'}" for nm,co,rr,sh,z in top)
             add(cid,"Investigate" if tot_short<200 else "Medium",tot_short,"geo",
                 f"Geo waste — {len(weakg)} weak/0-conv regions, ${tot_short:,.0f}/mo shortfall",
-                f"WHERE: {lst}"+(f" (+{more} more)" if more>0 else "")+f". ${tot_spend:,.0f} spend sub-{WEAK*blended:.1f}x ROAS. Exclude/bid-down (PMax = exclusion).","directional")
+                f"WHERE: {lst}"+(f" (+{more} more)" if more>0 else "")+f". ${tot_spend:,.0f} spend sub-{WEAK*blended:.1f}x ROAS. Exclude or apply a location bid adjustment (supported on PMax too — not exclusion-only).","directional")
         if dp_c.get(cid):
             hh=defaultdict(lambda:[0.0,0.0,0.0])
             for r2 in dp_c[cid]:
@@ -260,7 +260,7 @@ def main():
                 ts=sum(w[3] for w in weakh); top=sorted(weakh,key=lambda x:-x[3])[:6]
                 lst=", ".join(f"{hr:02d}:00 ${co:,.0f}@{rr:.1f}x" for hr,co,rr,sh in top)
                 add(cid,"Investigate",ts,"daypart",f"Weak hours — {len(weakh)} hours, ${ts:,.0f}/mo shortfall",
-                    f"WHERE: {lst}{' (+'+str(len(weakh)-len(top))+' more)' if len(weakh)>len(top) else ''}. PMax: no hourly bid → tighten campaign schedule.","directional")
+                    f"WHERE: {lst}{' (+'+str(len(weakh)-len(top))+' more)' if len(weakh)>len(top) else ''}. Apply an ad-schedule bid adjustment (supported on PMax too) or tighten the schedule window.","directional")
         ecnt=defaultdict(int)
         src=exttx_c.get(cid) or ext_c.get(cid) or []
         for r2 in src: ecnt[r2.get("field_type")]+=1
@@ -485,22 +485,25 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         # Two ACTIONABLE lists, not a flat "top spend": WINNERS to keep/scale, DRAINS to exclude/bid-down.
         winners=[]; drains=[]
         for rid,(co,cv,vl) in greg.items():
-            if co<GEO_MIN: continue
             rr=roas(vl,co)
-            if vl>0 and rr>=0.85*rref:          # high value + ROAS at/above the campaign's bar
+            if co>=GEO_MIN and vl>0 and rr>=0.85*rref:        # high value + ROAS at/above the campaign's bar
                 winners.append((_gname(rid),vl,"#10b981",f"${vl:,.0f} val · {rr:.1f}x"))
-            elif vl<=0 or rr<WEAK*rref:          # high cost but ~0 value / ROAS well below bar
-                drains.append((_gname(rid),co,"#ef4444",f"${co:,.0f} cost · {'0 value' if vl<=0 else f'{rr:.1f}x'}"))
-        winners=sorted(winners,key=lambda x:-x[1])[:6]; drains=sorted(drains,key=lambda x:-x[1])[:6]
+            elif (vl<=0 and co>=20) or (co>=GEO_MIN and rr<WEAK*rref):
+                # TWO kinds of drain: (a) spend with ZERO conversion value = 100% waste (low $ floor so we
+                # don't hide them); (b) meaningful spend at ROAS well below the bar. Rank by $ WASTED.
+                wasted = co if vl<=0 else co*(1-rr/rref)
+                drains.append((_gname(rid),co,"#ef4444",f"${co:,.0f} cost · {'0 value (100% waste)' if vl<=0 else f'{rr:.1f}x'}",wasted))
+        winners=sorted(winners,key=lambda x:-x[1])[:6]
+        drains=[t[:4] for t in sorted(drains,key=lambda x:-x[4])[:8]]
         if winners:
             charts.append(ccard("Geo — winners (keep / scale): high value &amp; ROAS","GOOD",
                 hbars(winners,max(x[1] for x in winners),w=560,bx=120),cnt,
-                action="These states convert efficiently — protect budget / consider geo bid-up (Search).",wide=True))
+                action="These states convert efficiently — protect budget / geo bid-up (Search & PMax both support location bid adjustments).",wide=True))
         if drains:
-            dtot=sum(x[1] for x in drains)
-            charts.append(ccard("Geo — drains (exclude / bid-down): high cost, low return","FIX" if dtot>=200 else "WATCH",
+            dtot=sum(x[1] for x in drains); nz=sum(1 for t in drains if "0 value" in t[3])
+            charts.append(ccard("Geo — drains (exclude / bid-down): zero-value + low-ROAS spend","FIX" if dtot>=200 else "WATCH",
                 hbars(drains,max(x[1] for x in drains),w=560,bx=120),cnt,
-                action=f"${dtot:,.0f}/mo spend in low/zero-return states — exclude or bid-down (PMax = exclusion-only).",wide=True))
+                action=f"${dtot:,.0f}/mo in drains"+(f" ({nz} states at 0 conversion value = pure waste)" if nz else "")+" — exclude or apply a location bid adjustment (supported on PMax too, not exclusion-only).",wide=True))
         if not winners and not drains and greg:
             charts.append(ccard("Geo","GOOD",hbars([( _gname(r),v[0],"#10b981",f"${v[0]:,.0f} · {roas(v[2],v[0]):.1f}x") for r,v in sorted(greg.items(),key=lambda x:-x[1][0])[:5]],max(v[0] for v in greg.values()),w=560,bx=120),cnt,action="All meaningful regions near target.",wide=True))
         hc={}

@@ -129,7 +129,7 @@ hour×day×campaign — let it overflow to a file and aggregate app-side; sum RO
 
 | Diagnosis | Threshold | Fix |
 |-----------|-----------|-----|
-| **Bad daypart** | an hour/day with material cost AND ROAS < ~40–50% of blended (or CPA ≫ target), sustained | (Search) ad-schedule **bid −%** or pause that window; (PMax) no hourly bid — use campaign-level schedule or flag for monitoring |
+| **Bad daypart** | an hour/day with material cost AND ROAS < ~40–50% of blended (or CPA ≫ target), sustained | ad-schedule **bid −%** on the weak window (supported on **both Search and PMax** via the campaign ad-schedule criterion's `bid_modifier`), or tighten/pause that window |
 | **No schedule despite a clear pattern** | ads run 24/7 flat while specific hours/days are consistently weak | add an ad schedule covering the strong windows |
 
 **Caveats (research-confirmed):** PMax and Smart Bidding do NOT support hour/day bid adjustments — only Search

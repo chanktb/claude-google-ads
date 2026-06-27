@@ -46,7 +46,7 @@ Every action carries:
 | `type` | extra fields | push_path | diagnostic |
 |---|---|---|---|
 | `add_negatives` | `scope: campaign\|shared_list`, `list_name` (shared), `negatives:[{text,match_type}]` | editor_csv (Search) / paste (PMax campaign neg) | D5 |
-| `exclude_geo` | `locations:[{name, id?}]` | ui (PMax = exclusion) / editor_csv (Search) | D3 |
+| `exclude_geo` | `locations:[{name, id?}]`, `bid_modifier?` | ui / editor_csv — exclude OR a location **bid adjustment** (both supported on Search AND PMax) | D3 |
 | `exclude_products` | `asset_group`, `products:[{item_id?, title}]` | ui (listing-group exclude) | D14 |
 | `adjust_budget` | `current_daily`, `new_daily`, `direction: up\|down` | api / ui | D2 |
 | `adjust_target_roas` | `current`, `new`, `conv_per_week` (for the floor) | api / ui | D1 |
