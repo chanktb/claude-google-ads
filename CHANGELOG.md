@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Added a **`pulled` manifest** contract so a truncated one-shot pull can't fabricate findings. A cold one-shot
+  audit revealed an agent may fetch a long per-campaign pull (e.g. `asset_group_signal`) for only some
+  campaigns and the generator would then emit FALSE "0 audience signals" for the rest. Now `bundle.json`
+  declares `pulled: [...]` (dimensions fully covered); the generator renders any un-declared dimension as
+  VERIFY ("not pulled — re-run"), never a confident GOOD/FIX. The `audit` skill mandates looping every
+  campaign and declaring `pulled` (honesty-by-construction).
 - Stopped the generator from mislabeling **pullable** data as "verify in UI". The channel-mix fail-safe no
   longer claims "PMax channel not API-exposed" (it IS — `segments.ad_network_type`); headlines show the real
   count when only verbatim text is serializer-blocked; and the non-search-burn finding is suppressed when

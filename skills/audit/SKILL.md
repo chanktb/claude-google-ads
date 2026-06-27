@@ -121,6 +121,16 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
    - **GAQL gotcha:** any field used in a `WHERE` filter MUST also appear in the `SELECT` clause, or the API
      returns `EXPECTED_REFERENCED_FIELD_IN_SELECT_CLAUSE` (e.g. filtering on `campaign.status` requires
      selecting it). If a field is rejected, drop just that field and re-run — don't abandon the whole pull.
+   - **COMPLETENESS — loop every campaign, never truncate.** Per-campaign pulls (`asset_group_signal`,
+     `asset_group_asset`, `campaign_search_term_insight`) must cover **ALL** PMax/Search campaigns — do NOT stop
+     "to save time" at the first few. A partial pull (e.g. signals for 3 of 7 PMax) makes the generator emit
+     FALSE "0 audience signals" findings for the un-pulled ones. Big results: save to a file + parse, don't drop.
+   - **DECLARE what you pulled.** `bundle.json` MUST carry a top-level **`pulled: [...]`** listing every
+     dimension you FULLY pulled (all campaigns) — e.g. `["active_campaigns","channel","device","geo","dayparting",
+     "schedule","extensions","signals","negatives","assets","products","conversion_lag","change_events"]`.
+     **Omit any dimension you could not complete** — the generator renders those VERIFY ("not pulled — re-run")
+     instead of fabricating GOOD/FIX. Honesty-by-construction: an absent `pulled` entry is safe; a half-filled
+     dimension passed off as complete is what burns the user.
 3. **Validate coverage**: confirm ≥30 days of data and a Search Terms Report before scoring; if a source
    is down, degrade gracefully (flag it, continue) per the fallback chain in `setup`.
 4. **Evaluate** each applicable check as PASS / WARNING / FAIL — applying GUARD-1…6 so nothing fires on an

@@ -171,6 +171,13 @@ def main():
     sch_c=bycamp("schedule")
     geo_names=b.get("geo_names",{})
     merch=b.get("merchant") or {}
+    # `pulled` manifest: the bundle declares which dimensions were FULLY pulled (all campaigns). A dimension
+    # not listed = NOT pulled → render VERIFY, never a confident finding. This stops a truncated/partial pull
+    # (e.g. signals fetched for only 3 of 7 PMax) from producing FALSE "0 signal" findings. If the bundle
+    # omits `pulled` entirely, fall back to key-presence (back-compat).
+    _pulled_decl = b.get("pulled")
+    def was_pulled(dim):
+        return (dim in _pulled_decl) if _pulled_decl is not None else (b.get(dim) not in (None, []))
     def merch_status(title):
         t=(title or "").lower()
         for x in merch.get("burner_status",[]) or []:
@@ -270,7 +277,7 @@ def main():
             lst="; ".join(f'"{_clean(r2.get("text",""))}" ${d(r2.get("cost_micros")):.0f}' for r2 in sorted(hburn,key=lambda x:-d(x.get("cost_micros")))[:5])
             add(cid,"Low",0,"adcopy",f"Ad-copy review — {len(hburn)} headlines spend, 0 conv",
                 f"{lst}. Read the PATTERN; validate with Asset Experiments, don't pause singles.","free")
-        if is_pmax(c):
+        if is_pmax(c) and was_pulled("signals"):
             rows=sig_c.get(cid,[]); aud=sum(1 for r2 in rows if (r2.get("audience") or "").strip()); thm=sum(1 for r2 in rows if (r2.get("search_theme") or "").strip())
             if aud==0: add(cid,"High",0,"signals","No audience signal","PMax has no seed to learn from. Add >=1: customer-match → website-visitors → custom segment.","free")
             elif thm<5: add(cid,"Low",0,"signals",f"Thin search themes ({thm})","Add specific intent-led search themes (up to 50/AG).","free")
@@ -518,7 +525,9 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         sn_v="GOOD" if sn>=1 else "FIX"
         crows.append(vrow(sn_v,"Structured snippets",(esc(", ".join(t for t in etx.get(SNIPPET_FT,[]) if t)[:70]) if sn else "0 sets"),cnt,
             action=("Add a snippet set (e.g. Brands: …)." if sn_v!="GOOD" else ""),mtr=meter_html(0.04 if sn==0 else 1,"#ef4444" if sn==0 else "#10b981")))
-        if is_pmax(c):
+        if is_pmax(c) and not was_pulled("signals"):
+            crows.append(vrow("VERIFY","Audience signals","not pulled — re-run asset_group_signal for EVERY PMax (don't stop early)",cnt,action="Loop all PMax campaigns; partial pull = false '0 signal' findings."))
+        elif is_pmax(c):
             srows=sig_c.get(cid,[]); aud=len({(x.get("audience") or "").strip() for x in srows if (x.get("audience") or "").strip()}); thm=len({(x.get("search_theme") or "").strip() for x in srows if (x.get("search_theme") or "").strip()})
             sig_v="GOOD" if aud>=1 else "FIX"
             crows.append(vrow(sig_v,"Audience signals",f"{aud} attached"+(" — seeded" if aud else ""),cnt,action=("Add >=1 signal (customer-match / site visitors)." if aud==0 else ""),mtr=meter_html(min(1,aud/3),"#10b981" if aud else "#ef4444")))
