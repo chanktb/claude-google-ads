@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `money_leak_report.py` extension detection used a wrong `AssetFieldType` enum (snippet=12, price=17). The
+  live API returns **STRUCTURED_SNIPPET=27, PRICE=26**, so real snippet/price assets were missed and the
+  generator emitted false "snippets 0" findings. Corrected the enum + added `SNIPPET_FT`/`PRICE_FT` constants.
+- `money_leak_report.py` crashed (`unsupported format string passed to NoneType`) when a connected Merchant
+  Center had `active: null` (feed health not pulled). Made the merchant block null-safe and show a
+  "feed health not pulled — verify in Merchant" note instead of fake zeros.
 - `validate_context.py` "Next step" no longer points at `plan`/`builder-*` when those gates are blocked by a
   missing prerequisite. With Google Ads connected but no store (so no AOV), it now reads
   `Next step: setup — provide AOV or live data source` instead of sending the user into `plan` to hit the

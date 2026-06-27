@@ -52,9 +52,12 @@ def _pdate(s):
 
 NET = {2:"Search",3:"Search Partners",4:"Display",7:"Mixed",8:"YouTube",9:"Google TV",10:"Google-owned",11:"Gmail",12:"Discover",13:"Maps"}
 DEV = {1:"Unknown",2:"Mobile",3:"Tablet",4:"Desktop",5:"Connected TV",6:"Other"}
+# AssetFieldType — real Google Ads API enum (verified live): SITELINK=13, CALLOUT=11, CALL=16,
+# LONG_HEADLINE=18, LOGO=21, PORTRAIT_IMAGE=24, PRICE=26, STRUCTURED_SNIPPET=27.
 FT  = {2:"Headline",3:"Description",4:"Mandatory text",5:"Image",6:"Media bundle",7:"YouTube video",10:"Promotion",
-       11:"Callout",12:"Structured snippet",13:"Sitelink",16:"Call",17:"Price",18:"Long headline/Biz name",
-       19:"Business name",20:"Logo",26:"Business logo",27:"Image"}
+       11:"Callout",13:"Sitelink",16:"Call",18:"Long headline/Biz name",19:"Business name",21:"Logo",
+       24:"Portrait image",26:"Price",27:"Structured snippet"}
+SNIPPET_FT, PRICE_FT = 27, 26
 SYS = {2:"ENABLED",3:"LEARNING_NEW",9:"LIMITED_BY_CPC_CEILING",11:"LIMITED_BY_DATA",12:"LIMITED_BY_BUDGET",
        15:"LIMITED_BY_INVENTORY",17:"MISCONFIGURED_CONV_TYPES",18:"MISCONFIGURED_CONV_SETTINGS"}
 PRI = {2:"ELIGIBLE",3:"PAUSED",4:"REMOVED",5:"ENDED",6:"PENDING",7:"MISCONFIGURED",8:"LIMITED",9:"LEARNING",10:"NOT_ELIGIBLE"}
@@ -254,7 +257,7 @@ def main():
         miss=[]
         if ecnt.get(13,0)<4: miss.append(f"sitelinks {ecnt.get(13,0)}")
         if ecnt.get(11,0)<4: miss.append(f"callouts {ecnt.get(11,0)}")
-        if ecnt.get(12,0)<1: miss.append("snippets 0")
+        if ecnt.get(SNIPPET_FT,0)<1: miss.append("snippets 0")
         if miss:
             add(cid,"High" if ecnt.get(13,0)==0 else "Low",0,"extensions",f"Thin extensions — {', '.join(miss)}",
                 "Add 6+ sitelinks, 8-10 callouts, a snippet set. Free SERP real estate / CTR lift.","free")
@@ -497,7 +500,7 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         src=exttx_c.get(cid) or ext_c.get(cid) or []
         for r2 in src: ec[r2.get("field_type")]+=1
         for r2 in (exttx_c.get(cid) or []): etx[r2.get("field_type")].append(_clean(r2.get("text","")))
-        sl=ec.get(13,0); cou=ec.get(11,0); sn=ec.get(12,0)
+        sl=ec.get(13,0); cou=ec.get(11,0); sn=ec.get(SNIPPET_FT,0)
         sl_v="GOOD" if sl>=4 else ("WATCH" if sl>=1 else "FIX")
         crows.append(vrow(sl_v,"Sitelinks",esc(", ".join(t for t in etx.get(13,[]) if t)[:90]) or f"{sl} links",cnt,
             action=("Add sitelinks (6+ with descriptions)." if sl_v!="GOOD" else ""),mtr=meter_html(min(1,sl/6),"#10b981" if sl_v=="GOOD" else ("#f59e0b" if sl_v=="WATCH" else "#ef4444"))))
@@ -505,7 +508,7 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         crows.append(vrow(cou_v,"Callouts",esc(", ".join(t for t in etx.get(11,[]) if t)[:80]) or f"{cou}",cnt,
             action=("Add to 8-10 callouts." if cou_v!="GOOD" else ""),mtr=meter_html(min(1,cou/8),"#10b981" if cou_v=="GOOD" else ("#f59e0b" if cou_v=="WATCH" else "#ef4444"))))
         sn_v="GOOD" if sn>=1 else "FIX"
-        crows.append(vrow(sn_v,"Structured snippets",(esc(", ".join(t for t in etx.get(12,[]) if t)[:70]) if sn else "0 sets"),cnt,
+        crows.append(vrow(sn_v,"Structured snippets",(esc(", ".join(t for t in etx.get(SNIPPET_FT,[]) if t)[:70]) if sn else "0 sets"),cnt,
             action=("Add a snippet set (e.g. Brands: …)." if sn_v!="GOOD" else ""),mtr=meter_html(0.04 if sn==0 else 1,"#ef4444" if sn==0 else "#10b981")))
         if is_pmax(c):
             srows=sig_c.get(cid,[]); aud=len({(x.get("audience") or "").strip() for x in srows if (x.get("audience") or "").strip()}); thm=len({(x.get("search_theme") or "").strip() for x in srows if (x.get("search_theme") or "").strip()})
@@ -555,9 +558,15 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
 
     # ---------- Merchant + action plan ----------
     if merch:
+        m_active = merch.get("active") or 0      # null-safe: a connected GMC with feed health NOT pulled has active=None
+        m_disap  = merch.get("disapproved") or 0
+        m_exp    = merch.get("expiring") or 0
         H.append('<h2 class="t">Account product feed (Merchant Center)</h2>')
-        H.append(f'<div class="card"><div style="padding:13px 18px;font-size:13px">GMC {esc(merch.get("merchant_id",""))} · <b>{merch.get("active",0):,} active</b> · {merch.get("disapproved",0)} disapproved ({merch.get("disapproved",0)/max(merch.get("active",1),1)*100:.2f}%) · {merch.get("expiring",0)} expiring.'
-                 + (f' Real disapprovals: <b>{esc(", ".join(f"{k} {v}" for k,v in merch.get("real_issues",{}).items()))}</b>' if merch.get("real_issues") else '') + '</div></div>')
+        if merch.get("active") is None and not merch.get("real_issues"):
+            H.append(f'<div class="card"><div style="padding:13px 18px;font-size:13px">GMC {esc(merch.get("merchant_id",""))} connected — <b>feed health not pulled this pass</b>. Verify OOS / disapprovals / GTIN in Merchant Center (highest-$ ecom lever).</div></div>')
+        else:
+            H.append(f'<div class="card"><div style="padding:13px 18px;font-size:13px">GMC {esc(merch.get("merchant_id",""))} · <b>{m_active:,} active</b> · {m_disap} disapproved ({m_disap/max(m_active,1)*100:.2f}%) · {m_exp} expiring.'
+                     + (f' Real disapprovals: <b>{esc(", ".join(f"{k} {v}" for k,v in merch.get("real_issues",{}).items()))}</b>' if merch.get("real_issues") else '') + '</div></div>')
     H.append('<h2 class="t">Action plan</h2><div class="card ap">')
     today=[f for f in findings if f["sev"] in ("Critical","High") and f["dim"] in ("signals","products","bid/target","change","extensions")]
     week=[f for f in findings if f["dim"] in ("geo","daypart","channel","device","alloc") and f["usd"]>0]

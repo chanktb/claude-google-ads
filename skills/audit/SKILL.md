@@ -75,11 +75,14 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
    - campaigns + metrics (active set), budgets, bidding strategy + tROAS
    - conversion_action (account) + per-campaign `segments.conversion_action_name` usage (GUARD-1)
    - asset_group / ad_group_ad ad-strength; keyword_view + Quality Score (deduped)
-   - **campaign extensions coverage** (D9): `SELECT campaign.id, campaign_asset.field_type, campaign_asset.status
-     FROM campaign_asset WHERE campaign.status='ENABLED' AND campaign_asset.status='ENABLED'`. `field_type` gives
-     the coverage (SITELINK / CALLOUT / STRUCTURED_SNIPPET / PRICE / IMAGE). **Do NOT also select `asset.type`
-     in this query — it throws INVALID_ARGUMENT on many MCPs;** pull asset text separately if needed. If it
-     still errors, flag extensions **UNVERIFIED — verify in UI**, never assume present/absent.
+   - **campaign extensions coverage** (D9): `SELECT campaign.id, campaign.status, campaign_asset.field_type,
+     campaign_asset.status FROM campaign_asset WHERE campaign.status='ENABLED' AND campaign_asset.status='ENABLED'`.
+     `field_type` gives the coverage (SITELINK / CALLOUT / STRUCTURED_SNIPPET / PRICE / IMAGE). **Two gotchas,
+     both seen live:** (1) `campaign.status` MUST be in the SELECT because it's filtered (else
+     `EXPECTED_REFERENCED_FIELD_IN_SELECT_CLAUSE`); (2) do NOT also select `asset.type` here — it throws
+     INVALID_ARGUMENT on many MCPs (pull asset text separately if needed). Count `field_type` **per campaign**
+     (not just presence) so "thin extensions" findings use real counts. If it still errors, flag extensions
+     **UNVERIFIED — verify in UI**, never assume present/absent.
    - search terms **both** sources: `search_term_view` + per-PMax `campaign_search_term_insight`
    - **negatives from ALL sources (GUARD-2) — NOT just `campaign_criterion`:** also
      `campaign_shared_set` (which shared lists attach to each campaign) → `shared_criterion` (the terms in
