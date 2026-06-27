@@ -178,6 +178,9 @@ def main():
     _pulled_decl = b.get("pulled")
     def was_pulled(dim):
         return (dim in _pulled_decl) if _pulled_decl is not None else (b.get(dim) not in (None, []))
+    # Account-wide signal presence: if SOME PMax carries signals, a lone campaign at 0 is more likely an
+    # incomplete per-campaign pull than a true gap → soften that finding instead of a confident "No signal".
+    _any_pmax_sig = any((r.get("audience") or "").strip() for r in (b.get("signals") or []))
     def merch_status(title):
         t=(title or "").lower()
         for x in merch.get("burner_status",[]) or []:
@@ -279,7 +282,10 @@ def main():
                 f"{lst}. Read the PATTERN; validate with Asset Experiments, don't pause singles.","free")
         if is_pmax(c) and was_pulled("signals"):
             rows=sig_c.get(cid,[]); aud=sum(1 for r2 in rows if (r2.get("audience") or "").strip()); thm=sum(1 for r2 in rows if (r2.get("search_theme") or "").strip())
-            if aud==0: add(cid,"High",0,"signals","No audience signal","PMax has no seed to learn from. Add >=1: customer-match → website-visitors → custom segment.","free")
+            if aud==0 and _any_pmax_sig:
+                add(cid,"Investigate",0,"signals","0 audience signals — confirm","Other PMax campaigns in this account DO carry signals, so a 0 here may be an incomplete per-campaign pull. Confirm in the UI; if truly none, add >=1 (customer-match / site visitors).","directional")
+            elif aud==0:
+                add(cid,"High",0,"signals","No audience signal","No PMax campaign has a signal seed — Smart Bidding has nothing to learn from. Add >=1: customer-match → website-visitors → custom segment.","free")
             elif thm<5: add(cid,"Low",0,"signals",f"Thin search themes ({thm})","Add specific intent-led search themes (up to 50/AG).","free")
         pa=defaultdict(lambda:[0.0,0.0,0,""])
         for r2 in prod_c.get(cid,[]):
@@ -544,8 +550,11 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
             crows.append(vrow("VERIFY","Audience signals","not pulled — re-run asset_group_signal for EVERY PMax (don't stop early)",cnt,action="Loop all PMax campaigns; partial pull = false '0 signal' findings."))
         elif is_pmax(c):
             srows=sig_c.get(cid,[]); aud=len({(x.get("audience") or "").strip() for x in srows if (x.get("audience") or "").strip()}); thm=len({(x.get("search_theme") or "").strip() for x in srows if (x.get("search_theme") or "").strip()})
-            sig_v="GOOD" if aud>=1 else "FIX"
-            crows.append(vrow(sig_v,"Audience signals",f"{aud} attached"+(" — seeded" if aud else ""),cnt,action=("Add >=1 signal (customer-match / site visitors)." if aud==0 else ""),mtr=meter_html(min(1,aud/3),"#10b981" if aud else "#ef4444")))
+            # GOOD if seeded; if 0 here but OTHER PMax have signals, it's likely an incomplete pull → VERIFY,
+            # not a confident FIX. Only a true account-wide absence is a FIX.
+            sig_v="GOOD" if aud>=1 else ("VERIFY" if _any_pmax_sig else "FIX")
+            sig_txt=(f"{aud} attached — seeded" if aud else ("0 here — confirm (other PMax have signals; pull may be partial)" if _any_pmax_sig else "0 attached — none in the account"))
+            crows.append(vrow(sig_v,"Audience signals",sig_txt,cnt,action=("" if aud else ("Confirm in UI, then add if truly missing." if _any_pmax_sig else "Add >=1 signal (customer-match / site visitors).")),mtr=meter_html(min(1,aud/3),"#10b981" if aud else "#ef4444")))
             thm_v="GOOD" if thm>=5 else "WATCH"
             thms=sorted({(x.get("search_theme") or "").strip() for x in srows if (x.get("search_theme") or "").strip()})
             crows.append(vrow(thm_v,"Search themes",f"{thm} — "+esc(", ".join(thms[:6])),cnt,action=("Add intent-led themes." if thm<5 else "")))

@@ -39,6 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   declares `pulled: [...]` (dimensions fully covered); the generator renders any un-declared dimension as
   VERIFY ("not pulled — re-run"), never a confident GOOD/FIX. The `audit` skill mandates looping every
   campaign and declaring `pulled` (honesty-by-construction).
+  Further: if signals are declared pulled but ONE PMax campaign shows 0 while others have signals, that
+  lone 0 renders **VERIFY "confirm (pull may be partial)"** — not a confident FIX — catching an under-covered
+  per-campaign pull (the residual a whole-dimension `pulled` flag can't see).
 - Stopped the generator from mislabeling **pullable** data as "verify in UI". The channel-mix fail-safe no
   longer claims "PMax channel not API-exposed" (it IS — `segments.ad_network_type`); headlines show the real
   count when only verbatim text is serializer-blocked; and the non-search-burn finding is suppressed when
