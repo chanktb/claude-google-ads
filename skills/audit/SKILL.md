@@ -107,15 +107,27 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
    - **geo — ALL regions** (D3): `geographic_view` scoped to active campaigns, `metrics.cost_micros > 0`, **no
      top-N limit**. Then resolve EVERY `segments.geo_target_region` id to a name via `geo_target_constant`
      (id, name, canonical_name). Raw `geoTargetConstants/NNNNN` ids in the report = an unfinished pull, never ship them.
-   - **asset text + counts** (D9): `asset_group_asset` (field_type HEADLINE/LONG_HEADLINE/DESCRIPTION) per
-     campaign for PMax; `ad_group_ad` for Search RSAs. Headline/description COUNTS + `ad_strength` ARE
-     pullable. (Two GENUINE MCP limits — the ONLY verify-in-UI items here: `asset_group_asset.performance_label`
-     = UNRECOGNIZED_FIELD on some API versions; RSA `headlines`/`descriptions` verbatim text = RepeatedComposite
-     serializer error. Flag THOSE two as UI-only; never the counts.)
+   - **asset TEXT + per-asset metrics** (D9) — pull the TEXT and cost, NOT just counts (a counts-only pull is
+     wrong; the verbatim text + per-asset spend is what surfaces "this headline spent $X at 0 conv"):
+     `SELECT campaign.id, asset_group_asset.field_type, asset.text_asset.text, metrics.cost_micros,
+     metrics.conversions, metrics.conversions_value, metrics.clicks FROM asset_group_asset WHERE
+     campaign.status='ENABLED' AND asset_group_asset.status='ENABLED' AND segments.date BETWEEN ...` (HEADLINE
+     ft2 / DESCRIPTION ft3 / LONG_HEADLINE ft18). `asset_group_asset` DOES return per-asset metrics — a
+     text-only or count-only pull just *looks* empty (gaql-notes). For **Search RSAs**, `ad_group_ad.ad.
+     responsive_search_ad.headlines` is a RepeatedComposite the serializer can't return — get RSA asset text +
+     metrics from **`ad_group_ad_asset_view`** instead (don't write "verify in UI"). The ONLY genuine UI-only
+     asset field is `asset_group_asset.performance_label` (UNRECOGNIZED on some API versions).
+   - **extension TEXT** (D9) — not just field_type counts: pull the sitelink/callout/snippet/price **text**
+     so the report shows the actual extensions. Either `campaign_asset` joined to the `asset` text fields
+     (`asset.sitelink_asset.link_text`, `asset.callout_asset.callout_text`, `asset.structured_snippet_asset.values`,
+     `asset.price_asset.*`) or the `asset` resource by id. bundle key `ext_text:[{campaign_id,field_type,text}]`.
    - **conversion lag** (D12): `segments.conversion_lag_bucket` — the "can I trust short-window ROAS?" gate.
    - **⚠️ "verify in UI" is ONLY for confirmed non-API fields** — Final URL Expansion, content suitability,
-     location Presence/Interest, asset automation, the two asset fields above, and `ad_group_ad.ad.final_urls`
-     (serializer-blocked). EVERYTHING ELSE is in the API: a fetch that returns nothing = wrong method (field/
+     location Presence/Interest, asset automation, `asset_group_asset.performance_label`, and
+     `ad_group_ad.ad.final_urls` / RSA `responsive_search_ad.headlines` (serializer-blocked — but RSA asset
+     text IS reachable via `ad_group_ad_asset_view`). Asset TEXT, extension TEXT, channel, dayparting, geo
+     names are NOT in this list — they are all pullable. EVERYTHING ELSE is in the API: a fetch that returns
+     nothing = wrong method (field/
      resource/missing `metrics.*`/enum-to-drop), **retry** — see `references/gaql-notes.md`. A "we can't see it,
      check the UI" on API-available data is the #1 way this audit loses a user's trust.
    - **GAQL gotcha:** any field used in a `WHERE` filter MUST also appear in the `SELECT` clause, or the API

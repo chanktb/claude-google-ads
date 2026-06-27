@@ -46,6 +46,19 @@ Discover · 13 Maps; only ≥2026-06-01, else 7=MIXED). `segments.device` works 
 5 Connected TV · 6 Other). `bidding_strategy_system_status` (2=ENABLED, 11=LIMITED_BY_DATA, 12=LIMITED_BY_BUDGET,
 15=LIMITED_BY_INVENTORY…) and `campaign.brand_guidelines_enabled` read fine. `performance_max_placement_view`
 returns impressions ONLY (no cost/conv).
+
+## Asset & extension TEXT both pull — do NOT report them as "verify in UI"
+- **PMax asset text + per-asset metrics:** `asset_group_asset` returns `asset.text_asset.text` AND
+  `metrics.cost_micros`/`conversions`/`clicks` per asset — that's how "this headline spent $X at 0 conv"
+  surfaces. A counts-only or text-only pull just *looks* empty. (Only `asset_group_asset.performance_label`
+  is UNRECOGNIZED on some MCP versions.)
+- **Search RSA text:** `ad_group_ad.ad.responsive_search_ad.headlines` is a RepeatedComposite the serializer
+  can't return — but the RSA asset text + metrics ARE reachable via **`ad_group_ad_asset_view`** (per-asset
+  rows). Use that; don't fall back to "verify in UI".
+- **Extension text:** the sitelink/callout/snippet/price verbatim text reads from the `asset` resource
+  (`asset.sitelink_asset.link_text`, `asset.callout_asset.callout_text`,
+  `asset.structured_snippet_asset.values`, `asset.price_asset.*`) — join from `campaign_asset` by asset id.
+  A `campaign_asset.field_type`-only pull gives counts; add the asset text for the real extensions.
 | `campaign_shared_set` / `shared_set` | `shared_set.type` | Rejected by some MCPs — omit it; infer list purpose from `shared_set.name` |
 
 ## Negatives live in TWO places — pull BOTH (GUARD-2)

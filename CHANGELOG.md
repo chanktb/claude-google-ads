@@ -33,6 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Corrected a false "asset / extension text isn't pullable" claim** caught by diffing against a known-good
+  prior report. The earlier prior run's bundle clearly carried PMax **asset text + per-asset cost**
+  (`asset_group_asset` → `asset.text_asset.text` + `metrics.*`), **descriptions** text, and **extension text**
+  (`ext_text`) — all of which a later "improved" pull had reduced to counts-only and the report then mislabeled
+  "text not returned by this MCP — verify in UI". That was wrong-method, not an API limit. The `audit` skill +
+  `gaql-notes` now specify pulling asset TEXT + metrics and extension TEXT explicitly, route Search-RSA text
+  through `ad_group_ad_asset_view` (the one genuine serializer block), and the generator's fallback no longer
+  blames the MCP. Lesson: diff every report against a prior known-good one before trusting "no data".
 - Added a **`pulled` manifest** contract so a truncated one-shot pull can't fabricate findings. A cold one-shot
   audit revealed an agent may fetch a long per-campaign pull (e.g. `asset_group_signal`) for only some
   campaigns and the generator would then emit FALSE "0 audience signals" for the rest. Now `bundle.json`

@@ -566,8 +566,9 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         else:
             txts=[t for t in (f'"{esc(_clean(x.get("text","")))}" ${d(x.get("cost_micros")):.0f}' if x.get("text") else "" for x in heads[:4]) if t]
             hl_v="WATCH" if hburn else ("GOOD" if heads else "WATCH")
-            # heads present but MCP serializer-blocked the text (RSA RepeatedComposite) → show the count, honestly
-            hl_txt="; ".join(txts) or (f"{len(heads)} headlines (text not returned by this MCP — verify in UI)" if heads else "none pulled")
+            # heads present but text empty = a counts-only pull (text IS pullable via asset_group_asset +
+            # asset.text_asset.text — re-pull WITH text + metrics). Don't blame the MCP.
+            hl_txt="; ".join(txts) or (f"{len(heads)} headlines — text not in bundle (re-pull asset_group_asset WITH asset.text_asset.text + metrics)" if heads else "none pulled")
             crows.append(vrow(hl_v,"Headlines",hl_txt,cnt,action=(f"{len(hburn)} headlines spent at 0 conv — read pattern, test via Asset Experiments." if hburn else "")))
         descs=desc_c.get(cid,[])
         if descs or "descriptions" in b:
