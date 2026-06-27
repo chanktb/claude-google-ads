@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Geo card redesigned to be actionable.** Replaced the flat "Geo — top spend by ROAS" list with two
+  decision-ready lists per campaign: **winners** (high conversion value + ROAS at/above the campaign's bar —
+  keep / scale) and **drains** (high cost but ~0 value or ROAS well below bar — exclude / bid-down, with the
+  $/mo total). An operator can now see at a glance which states to protect vs cut, instead of a flat spend list.
+
+### Changed
+
 - Hardened the cold-start (no-data) path: every data-pulling skill — `measurement`, `plan`, `optimizer`,
   `tracker` — now explicitly routes to `setup` when `account-context.yaml` is missing, matching the guard
   `audit` and the router already had. Verified end-to-end that a brand-new user with nothing connected is

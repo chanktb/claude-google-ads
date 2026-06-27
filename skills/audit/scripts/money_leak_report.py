@@ -481,16 +481,28 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         greg=defaultdict(lambda:[0.0,0.0,0.0])
         for r2 in geo_c.get(cid,[]):
             rid=r2.get("geo_region_id"); greg[rid][0]+=d(r2.get("cost_micros")); greg[rid][1]+=float(r2.get("conversions",0) or 0); greg[rid][2]+=float(r2.get("conversions_value",0) or 0)
-        georows=[]
-        for rid,(co,cv,vl) in sorted(greg.items(),key=lambda x:-x[1][0])[:7]:
-            rr=roas(vl,co); col="#10b981" if rr>=0.85*rref else ("#f59e0b" if rr>=0.5*rref else "#ef4444")
-            nm=(geo_names.get(str(rid),geo_names.get(rid,str(rid))) or "").split(",")[0]
-            georows.append((nm,co,col,f"${co:,.0f} · {rr:.2f}x"))
-        geof=[f for f in cfind.get(cid,[]) if f["dim"]=="geo"]; geo_usd=sum(f["usd"] for f in geof)
-        geo_v="FIX" if geo_usd>200 else ("WATCH" if geof else "GOOD")
-        if georows:
-            charts.append(ccard("Geo — top spend by ROAS",geo_v,hbars(georows,max(x[1] for x in georows),w=560,bx=120),cnt,
-                action=(geof[0]["body"] if geof else "All regions healthy."),wide=True))
+        def _gname(rid): return (geo_names.get(str(rid),geo_names.get(rid,str(rid))) or "").split(",")[0]
+        # Two ACTIONABLE lists, not a flat "top spend": WINNERS to keep/scale, DRAINS to exclude/bid-down.
+        winners=[]; drains=[]
+        for rid,(co,cv,vl) in greg.items():
+            if co<GEO_MIN: continue
+            rr=roas(vl,co)
+            if vl>0 and rr>=0.85*rref:          # high value + ROAS at/above the campaign's bar
+                winners.append((_gname(rid),vl,"#10b981",f"${vl:,.0f} val · {rr:.1f}x"))
+            elif vl<=0 or rr<WEAK*rref:          # high cost but ~0 value / ROAS well below bar
+                drains.append((_gname(rid),co,"#ef4444",f"${co:,.0f} cost · {'0 value' if vl<=0 else f'{rr:.1f}x'}"))
+        winners=sorted(winners,key=lambda x:-x[1])[:6]; drains=sorted(drains,key=lambda x:-x[1])[:6]
+        if winners:
+            charts.append(ccard("Geo — winners (keep / scale): high value &amp; ROAS","GOOD",
+                hbars(winners,max(x[1] for x in winners),w=560,bx=120),cnt,
+                action="These states convert efficiently — protect budget / consider geo bid-up (Search).",wide=True))
+        if drains:
+            dtot=sum(x[1] for x in drains)
+            charts.append(ccard("Geo — drains (exclude / bid-down): high cost, low return","FIX" if dtot>=200 else "WATCH",
+                hbars(drains,max(x[1] for x in drains),w=560,bx=120),cnt,
+                action=f"${dtot:,.0f}/mo spend in low/zero-return states — exclude or bid-down (PMax = exclusion-only).",wide=True))
+        if not winners and not drains and greg:
+            charts.append(ccard("Geo","GOOD",hbars([( _gname(r),v[0],"#10b981",f"${v[0]:,.0f} · {roas(v[2],v[0]):.1f}x") for r,v in sorted(greg.items(),key=lambda x:-x[1][0])[:5]],max(v[0] for v in greg.values()),w=560,bx=120),cnt,action="All meaningful regions near target.",wide=True))
         hc={}
         if dp_c.get(cid):
             hh=defaultdict(lambda:[0.0,0.0])
