@@ -15,6 +15,7 @@ Prove conversion tracking is correct and trustworthy, or block `plan`/`builder-*
 live MCP detection from `setup`. **Never raise an alarm from the action list alone.**
 
 ## STEP 0 — Load context
+**If `account-context.yaml` is missing, run `setup` first — don't validate tracking on an unconfigured account.**
 Read `account-context.yaml`: `google_ads.customer_id`, `conversion_actions`, `measurement.*`,
 `data_source` (for value sanity), `business.model/vertical` (lead vs purchase expectations). Output goes
 to the working directory; update the context's `conversion_actions` + `measurement.*` as you verify them.

@@ -16,6 +16,7 @@ context and the audit/measurement outputs — no hardcoding, no guessing where d
 ## STEP 0 — Load context + GATE
 1. Read `account-context.yaml` (budget, AOV, margin_tiers, brand_terms, vertical, guardrails) and the
    latest `audit` + `measurement` outputs from the working directory.
+   **If the context is missing, run `setup` first — never plan spend without it.**
 2. **Measurement gate**: if `measurement` = FAIL, STOP — do not plan spend on broken tracking. Tell the
    user to fix tracking first. WARN is allowed but carried into the plan as a risk note.
 3. Confirm `campaign_defaults.daily_budget` (or ask). Output is written to the working directory.

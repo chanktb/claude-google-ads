@@ -24,7 +24,8 @@ Watch live campaigns and surface what's happening. **Changes nothing in the acco
 - **Judge (main session)** — STEP 2-4 learning-phase read, pacing call, and especially anomaly-vs-expected (apply the cooldown — a recent deliberate change is NOT an anomaly). The pull is cheap; deciding what's normal variance vs a real alert is judgment.
 
 ## STEP 0 — Load
-Read `account-context.yaml` (customer_id, guardrails, margin_tiers for ROAS context). Identify which
+Read `account-context.yaml` (customer_id, guardrails, margin_tiers for ROAS context). **If it's missing,
+run `setup` first — never observe on an unconfigured/half-connected account.** Identify which
 campaigns are newly launched (recent `change_event` / start date) vs established.
 
 ## STEP 1 — Pull recent performance

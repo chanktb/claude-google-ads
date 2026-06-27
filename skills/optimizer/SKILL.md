@@ -17,7 +17,8 @@ scored health check use `audit`; this skill is about performance and money.
 
 ## Operating rules
 - Every recommendation has data backing (specific numbers, not vague advice).
-- Read everything from `account-context.yaml` (margin_tiers, brand_terms, guardrails, AOV).
+- Read everything from `account-context.yaml` (margin_tiers, brand_terms, guardrails, AOV). **If the context
+  is missing, run `setup` first — never optimize a live account without it.**
 - **Read the context `connections` block first.** If store/GA4 is `missing`, do the in-platform analysis and
   label every true-ROAS / store-revenue conclusion **UNVERIFIED — connect store/GA4**; never fabricate a
   store-revenue figure to compute "true ROAS". Prefer guiding the user to connect over guessing.

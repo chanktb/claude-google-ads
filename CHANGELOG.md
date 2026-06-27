@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Changes that have landed but aren't part of a tagged release yet go here._
+### Changed
+
+- Hardened the cold-start (no-data) path: every data-pulling skill — `measurement`, `plan`, `optimizer`,
+  `tracker` — now explicitly routes to `setup` when `account-context.yaml` is missing, matching the guard
+  `audit` and the router already had. Verified end-to-end that a brand-new user with nothing connected is
+  stopped cleanly with connect-this guidance and never gets a fabricated number (`validate_context.py`
+  emits `Next step: setup (connect Google Ads)`).
 
 ## [0.1.0] - 2026-06-27
 
