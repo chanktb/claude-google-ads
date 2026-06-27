@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stopped cleanly with connect-this guidance and never gets a fabricated number (`validate_context.py`
   emits `Next step: setup (connect Google Ads)`).
 
+### Fixed
+
+- `validate_context.py` "Next step" no longer points at `plan`/`builder-*` when those gates are blocked by a
+  missing prerequisite. With Google Ads connected but no store (so no AOV), it now reads
+  `Next step: setup — provide AOV or live data source` instead of sending the user into `plan` to hit the
+  gap. Surfaced by a "Google-Ads-only, reduced-scope" test.
+
 ## [0.1.0] - 2026-06-27
 
 First public release — a Claude Code **plugin** that operates Google Ads end-to-end for **ecommerce**

@@ -159,8 +159,12 @@ def main():
     nxt = ("setup (connect Google Ads)" if not ga_ok else
            "setup" if not setup_complete else
            "measurement" if not measurement_ready else
-           "plan" if not plan_ready else
-           "builder-*" if not build_ready else "ready to build")
+           # plan-ready fails on a MISSING prerequisite (AOV/live data, budget) — point at the
+           # fix (connect store / add the value via setup), not at `plan`, which would hit the gap.
+           ("setup — provide " + " + ".join(plan_need)) if not plan_ready else
+           # build-ready wants brand_terms; guide to add them rather than into a half-ready build.
+           "setup — add brand.brand_terms" if not build_ready else
+           "ready to build")
     print(f"\nNext step: {nxt}\n")
 
     sys.exit(0 if setup_complete else 1)
