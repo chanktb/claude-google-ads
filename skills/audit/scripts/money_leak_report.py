@@ -199,7 +199,10 @@ def main():
         ch=defaultdict(lambda:[0.0,0.0])
         for r2 in chan_c.get(cid,[]):
             n=r2.get("ad_network_type"); ch[n][0]+=d(r2.get("cost_micros")); ch[n][1]+=float(r2.get("conversions",0) or 0)
-        burn=[(netname(n),v) for n,v in ch.items() if n not in (2,3) and v[0]>=10 and v[1]==0]
+        # Only flag non-search burn when per-network CONVERSIONS were actually pulled. If channel rows carry
+        # cost but no conversions (a cost-only pull), every campaign would look like "0 conv burn" — false.
+        ch_has_conv = sum(v[1] for v in ch.values()) > 0
+        burn=[(netname(n),v) for n,v in ch.items() if n not in (2,3) and v[0]>=10 and v[1]==0] if ch_has_conv else []
         if burn:
             tt=sum(v[0] for _,v in burn); worst=", ".join(f"{nm} ${v[0]:.0f}" for nm,v in sorted(burn,key=lambda x:-x[1][0])[:3])
             add(cid,"Investigate" if tt<60 else "Medium",tt,"channel",f"Non-Search burn ${tt:.0f}/mo, 0 conv",
@@ -448,10 +451,9 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         chs=defaultdict(float)
         for r2 in chan_c.get(cid,[]): chs[r2.get("ad_network_type")]+=d(r2.get("cost_micros"))
         if not chs:
-            # No channel rows for this campaign: NOT pulled, or PMax (Google doesn't expose its channel split
-            # via API). Never render a fabricated "0% / GOOD" donut — mark it for what it is.
-            note=("PMax — channel split not API-exposed; verify in UI." if is_pmax(c) else "Channel split not pulled — verify in UI.")
-            charts.append(ccard("Channel mix","VERIFY",donut2(0,"—","n/a"),cnt,cap=note))
+            # No channel rows: NOT pulled. segments.ad_network_type IS available (incl. PMax) — this is a
+            # pull gap to fix, NOT a UI-only field. Never render a fabricated "0% / GOOD" donut.
+            charts.append(ccard("Channel mix","VERIFY",donut2(0,"—","n/a"),cnt,cap="channel not pulled — re-run (segments.ad_network_type works, incl. PMax)"))
         else:
             cs=sum(v for n,v in chs.items() if n in (2,3)); ot=sum(v for n,v in chs.items() if n not in (2,3)); ctot=cs+ot or 1
             channel_v="WATCH" if "channel" in dimset else "GOOD"
@@ -526,11 +528,13 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         heads=sorted([x for x in asset_c.get(cid,[]) if x.get("field_type")==2],key=lambda x:-d(x.get("cost_micros")))
         hburn=[x for x in heads if d(x.get("cost_micros"))>=ASSET_MIN and float(x.get("conversions",0) or 0)==0]
         if not heads and "assets" not in b:
-            # not pulled — never render as a GOOD/WATCH verdict on absent data
-            crows.append(vrow("VERIFY","Headlines","asset text not pulled — verify in UI",cnt,action="Pull asset_group_asset / ad_group_ad assets to assess."))
+            # not pulled — segments/asset_group_asset ARE available; this is a pull gap, not UI-only
+            crows.append(vrow("VERIFY","Headlines","not pulled — re-run (asset_group_asset)",cnt,action="Pull asset_group_asset / ad_group_ad assets to assess."))
         else:
+            txts=[t for t in (f'"{esc(_clean(x.get("text","")))}" ${d(x.get("cost_micros")):.0f}' if x.get("text") else "" for x in heads[:4]) if t]
             hl_v="WATCH" if hburn else ("GOOD" if heads else "WATCH")
-            hl_txt="; ".join(f'"{esc(_clean(x.get("text","")))}" ${d(x.get("cost_micros")):.0f}' for x in heads[:4]) or "none pulled"
+            # heads present but MCP serializer-blocked the text (RSA RepeatedComposite) → show the count, honestly
+            hl_txt="; ".join(txts) or (f"{len(heads)} headlines (text not returned by this MCP — verify in UI)" if heads else "none pulled")
             crows.append(vrow(hl_v,"Headlines",hl_txt,cnt,action=(f"{len(hburn)} headlines spent at 0 conv — read pattern, test via Asset Experiments." if hburn else "")))
         descs=desc_c.get(cid,[])
         if descs or "descriptions" in b:

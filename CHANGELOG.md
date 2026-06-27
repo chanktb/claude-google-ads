@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Stopped the generator from mislabeling **pullable** data as "verify in UI". The channel-mix fail-safe no
+  longer claims "PMax channel not API-exposed" (it IS — `segments.ad_network_type`); headlines show the real
+  count when only verbatim text is serializer-blocked; and the non-search-burn finding is suppressed when
+  channel rows carry no conversions (a cost-only pull no longer fabricates "0-conv burn" on every network).
+  The `audit` MANDATORY-pull manifest now explicitly lists channel / device / dayparting / ad-schedule /
+  all-region geo + name resolution / asset text, and pins verify-in-UI to the few confirmed non-API fields.
 - `money_leak_report.py` now **fails safe on un-pulled dimensions** instead of fabricating findings. A bundle
   missing `channel`/`assets`/`negatives` previously rendered a fake "Channel mix GOOD 0%", "Headlines WATCH",
   and "no negatives → attach lists" — confident verdicts on absent data. Now each renders **VERIFY / "not

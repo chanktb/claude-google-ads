@@ -97,6 +97,27 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      own brand) is excluded on each PMax campaign. An account can run BOTH a brand negative-keyword list AND a brand-list
      exclusion (belt-and-suspenders) — read both before judging.
    - `change_event` (~14d)
+   - **channel split** (D8): `segments.ad_network_type` per campaign — **this WORKS for PMax too** (network 2
+     Search/Shopping dominates; small YouTube/Display/cross). NEVER report channel as "verify in UI". Pull
+     `metrics.conversions` alongside cost — a cost-only pull makes every network look like 0-conv burn.
+   - **device split** (D10): `segments.device` per campaign (2 Mobile · 3 Tablet · 4 Desktop · 5 CTV · 6 Other).
+   - **dayparting** (D3/D4): `segments.hour` + `segments.day_of_week` per campaign + metrics — for the hourly
+     heatmap and best/worst hour/day. And **ad schedule**: `campaign_criterion.ad_schedule.*` + `bid_modifier`
+     (a flat `bid_modifier=0` across the window = NO dayparting bid strategy — a real opportunity finding).
+   - **geo — ALL regions** (D3): `geographic_view` scoped to active campaigns, `metrics.cost_micros > 0`, **no
+     top-N limit**. Then resolve EVERY `segments.geo_target_region` id to a name via `geo_target_constant`
+     (id, name, canonical_name). Raw `geoTargetConstants/NNNNN` ids in the report = an unfinished pull, never ship them.
+   - **asset text + counts** (D9): `asset_group_asset` (field_type HEADLINE/LONG_HEADLINE/DESCRIPTION) per
+     campaign for PMax; `ad_group_ad` for Search RSAs. Headline/description COUNTS + `ad_strength` ARE
+     pullable. (Two GENUINE MCP limits — the ONLY verify-in-UI items here: `asset_group_asset.performance_label`
+     = UNRECOGNIZED_FIELD on some API versions; RSA `headlines`/`descriptions` verbatim text = RepeatedComposite
+     serializer error. Flag THOSE two as UI-only; never the counts.)
+   - **conversion lag** (D12): `segments.conversion_lag_bucket` — the "can I trust short-window ROAS?" gate.
+   - **⚠️ "verify in UI" is ONLY for confirmed non-API fields** — Final URL Expansion, content suitability,
+     location Presence/Interest, asset automation, the two asset fields above, and `ad_group_ad.ad.final_urls`
+     (serializer-blocked). EVERYTHING ELSE is in the API: a fetch that returns nothing = wrong method (field/
+     resource/missing `metrics.*`/enum-to-drop), **retry** — see `references/gaql-notes.md`. A "we can't see it,
+     check the UI" on API-available data is the #1 way this audit loses a user's trust.
    - **GAQL gotcha:** any field used in a `WHERE` filter MUST also appear in the `SELECT` clause, or the API
      returns `EXPECTED_REFERENCED_FIELD_IN_SELECT_CLAUSE` (e.g. filtering on `campaign.status` requires
      selecting it). If a field is rejected, drop just that field and re-run — don't abandon the whole pull.
