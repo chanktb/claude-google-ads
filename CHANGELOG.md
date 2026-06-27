@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `audit` and the router already had. Verified end-to-end that a brand-new user with nothing connected is
   stopped cleanly with connect-this guidance and never gets a fabricated number (`validate_context.py`
   emits `Next step: setup (connect Google Ads)`).
+- `references/aov-and-sales-sourcing.md`: added a "pull COMPLETELY — paginate" section after a live onboarding
+  hit a truncated store pull (385 vs ~3,000 orders) that left AOV looking right while undercounting volume ~8×
+  and breaking the Ads-vs-store cross-check. Now mandates exhausting pagination + a magnitude sanity check.
+- `audit` skill: added the campaign-extensions pull to the mandatory bundle with the correct `campaign_asset`
+  GAQL (and the `asset.type` INVALID_ARGUMENT gotcha), plus the `EXPECTED_REFERENCED_FIELD_IN_SELECT_CLAUSE`
+  rule — both surfaced by a live DTK audit. Reinforces flagging extensions `UNVERIFIED` over assuming.
 
 ### Fixed
 

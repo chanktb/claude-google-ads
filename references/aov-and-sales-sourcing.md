@@ -35,6 +35,19 @@ drives:
 - Orders with status `completed`/`processing`; exclude `draft`, `pending`, `cancelled`, `refunded`.
 - If other channels feed Woo, filter them out the same way.
 
+## Pull COMPLETELY — paginate or the count is wrong (silent failure)
+A truncated pull is the most dangerous failure here because it **hides**: AOV can still look right while order
+count and total sales are massively undercounted. (Seen in practice: a REST pull that stopped after ~2 pages
+reported 385 orders / $40k where the real figure was ~3,000 orders / $360k in the same window — AOV was
+fine, volume was off by ~8×, which then broke the Ads-vs-store value cross-check.)
+- **Paginate to exhaustion** — follow `pageInfo.hasNextPage`/cursors (GraphQL) or `Link: rel="next"` (REST)
+  until there are no more pages. Never trust a single page.
+- **Sanity-check the magnitude:** the store's 30d revenue should be the same order of magnitude as GA4
+  purchase revenue and at/above Google Ads' attributed value. If store revenue comes out *below* what Ads
+  claims it drove, suspect the pull (pagination/channel/status filter) before suspecting the account.
+- Prefer an aggregate analytics/ShopifyQL query (returns server-side totals, no client pagination to get
+  wrong) over hand-rolled order iteration when you only need totals + AOV.
+
 ## Output for the context
 Write `business.aov` as the **store online-store AOV**, and note the source + window. If you also have a
 Google-Ads-attributed figure, keep it in a note for cross-reference, not as the primary value.

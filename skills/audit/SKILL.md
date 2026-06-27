@@ -75,6 +75,11 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
    - campaigns + metrics (active set), budgets, bidding strategy + tROAS
    - conversion_action (account) + per-campaign `segments.conversion_action_name` usage (GUARD-1)
    - asset_group / ad_group_ad ad-strength; keyword_view + Quality Score (deduped)
+   - **campaign extensions coverage** (D9): `SELECT campaign.id, campaign_asset.field_type, campaign_asset.status
+     FROM campaign_asset WHERE campaign.status='ENABLED' AND campaign_asset.status='ENABLED'`. `field_type` gives
+     the coverage (SITELINK / CALLOUT / STRUCTURED_SNIPPET / PRICE / IMAGE). **Do NOT also select `asset.type`
+     in this query — it throws INVALID_ARGUMENT on many MCPs;** pull asset text separately if needed. If it
+     still errors, flag extensions **UNVERIFIED — verify in UI**, never assume present/absent.
    - search terms **both** sources: `search_term_view` + per-PMax `campaign_search_term_insight`
    - **negatives from ALL sources (GUARD-2) — NOT just `campaign_criterion`:** also
      `campaign_shared_set` (which shared lists attach to each campaign) → `shared_criterion` (the terms in
@@ -89,6 +94,9 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      own brand) is excluded on each PMax campaign. An account can run BOTH a brand negative-keyword list AND a brand-list
      exclusion (belt-and-suspenders) — read both before judging.
    - `change_event` (~14d)
+   - **GAQL gotcha:** any field used in a `WHERE` filter MUST also appear in the `SELECT` clause, or the API
+     returns `EXPECTED_REFERENCED_FIELD_IN_SELECT_CLAUSE` (e.g. filtering on `campaign.status` requires
+     selecting it). If a field is rejected, drop just that field and re-run — don't abandon the whole pull.
 3. **Validate coverage**: confirm ≥30 days of data and a Search Terms Report before scoring; if a source
    is down, degrade gracefully (flag it, continue) per the fallback chain in `setup`.
 4. **Evaluate** each applicable check as PASS / WARNING / FAIL — applying GUARD-1…6 so nothing fires on an
