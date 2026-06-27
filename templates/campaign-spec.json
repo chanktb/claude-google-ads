@@ -1,0 +1,107 @@
+{
+  "spec_version": 1,
+  "campaign_type": "performance_max",
+  "_comment": "Machine contract between builder-* and pusher. The builder emits this (plus a human .xlsx). The pusher reads THIS, never the xlsx. Generic example below — no business specifics.",
+
+  "account": {
+    "customer_id": "1234567890",
+    "login_customer_id": "0987654321",
+    "currency": "USD"
+  },
+
+  "campaign": {
+    "name": "PMax - Example Asset Group Split",
+    "status": "paused",
+    "daily_budget": 80,
+    "bidding": { "strategy": "maximize_conversion_value", "target_roas": null },
+    "conversion_goals": { "scope": "campaign", "goals": ["Purchase"] },
+    "brand_exclusion": { "enabled": true, "brand_list_terms": ["examplebrand"] },
+    "final_url_expansion": false,
+    "auto_created_assets": false,
+    "geo_targeting": ["US"],
+    "language_targeting": ["en"]
+  },
+
+  "split_strategy": {
+    "campaign_axis": "margin_tier",
+    "asset_group_axis": "product_type",
+    "rationale": "Margins differ across lines; product type drives creative/listing within the campaign."
+  },
+
+  "asset_groups": [
+    {
+      "name": "AG1 - Category A",
+      "final_url": "https://example.com/collections/category-a",
+      "display_paths": ["Brand", "Category A"],
+      "headlines": ["Headline up to 30 chars", "Another headline"],
+      "long_headlines": ["A full value proposition up to ninety characters long"],
+      "descriptions": ["A description up to ninety characters emphasizing one benefit"],
+      "search_themes": ["category a keyword", "category a wholesale"],
+      "listing_group": {
+        "type": "subdivision",
+        "dimension": "brand",
+        "value": "ExampleBrand",
+        "children": [
+          { "type": "unit", "dimension": "product_type", "value": "Category A", "action": "include" },
+          { "type": "unit", "dimension": "other", "action": "exclude" }
+        ]
+      },
+      "audience_signal": {
+        "customer_match_lists": ["All purchasers"],
+        "website_visitors": ["30-90 day visitors"],
+        "custom_segments_search": ["category a keyword"],
+        "custom_segments_url": ["competitor-domain.example"],
+        "in_market": [],
+        "demographics": []
+      },
+      "business_name": "Example Brand",
+      "call_to_action": "Shop Now",
+      "image_assets": [
+        { "role": "landscape", "spec": "1200x628", "count": 3, "brief": "TODO: specific shot — subject, setting, props, leave space for overlay" },
+        { "role": "square", "spec": "1200x1200", "count": 3, "brief": "TODO: hero product shot" },
+        { "role": "logo_square", "spec": "1200x1200", "count": 1, "brief": "TODO: brand logo on transparent/white" }
+      ],
+      "video_assets": [
+        { "orientation": "horizontal", "spec": "1920x1080", "brief": "OPTIONAL: 10-15s product story; if omitted PMax auto-generates from images" }
+      ]
+    }
+  ],
+
+  "extensions": {
+    "_note": "PMax extensions attach at CAMPAIGN level (not per asset group).",
+    "sitelinks": [
+      { "text": "Sitelink ≤25 chars", "description1": "Desc ≤35 chars", "description2": "Desc ≤35 chars", "final_url": "https://example.com/collections/bestsellers" }
+    ],
+    "callouts": ["Free Shipping", "Wholesale Pricing", "Fast Dispatch", "Authentic Products"],
+    "structured_snippets": [
+      { "header": "Brands", "values": ["Brand A", "Brand B", "Brand C"] }
+    ],
+    "promotions": [],
+    "_promotions_placeholder": "ADD WHEN RUNNING A SALE: occasion, % or $ off, promo code, dates, final URL.",
+    "prices": [
+      {
+        "type": "Product categories",
+        "price_qualifier": "From",
+        "currency": "USD",
+        "_source": "Pull real 'From' prices per category from data_source — don't invent.",
+        "items": [
+          { "header": "Category A", "description": "Short desc ≤25", "price": "9.99", "final_url": "https://example.com/collections/category-a" },
+          { "header": "Category B", "description": "Short desc ≤25", "price": "19.99", "final_url": "https://example.com/collections/category-b" },
+          { "header": "Category C", "description": "Short desc ≤25", "price": "29.99", "final_url": "https://example.com/collections/category-c" }
+        ]
+      }
+    ]
+  },
+
+  "campaign_negatives": [
+    { "text": "free", "match_type": "phrase" },
+    { "text": "diy", "match_type": "phrase" }
+  ],
+  "shared_negative_lists": ["Account brand-defense list"],
+
+  "provenance": {
+    "built_by": "builder-pmax",
+    "context_source": "account-context.yaml",
+    "verified": false
+  }
+}

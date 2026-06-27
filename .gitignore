@@ -1,0 +1,34 @@
+# ============================================================================
+# Business data — NEVER publish. Real contexts live in ../claude-google-ads-lab/
+# ============================================================================
+# Any real filled context anywhere in the repo is ignored...
+account-context.yaml
+account-context.*.yaml
+*.account-context.yaml
+# ...except the blank template and the FAKE published example:
+!templates/account-context.yaml
+!examples/*.account-context.yaml
+
+# Generated deliverables (blueprints, audits, exports, reports) — keep out of repo
+/lab/
+/runs/
+/out/
+exports/
+*.xlsx
+
+# Local & secrets
+.env
+secrets/
+*.local.*
+.scrub-extra        # optional local brand wordlist for the scrub check
+
+# ============================================================================
+# Internal dev trackers — NOT published (they narrate the test account + process).
+# The public docs are README.md + docs/USAGE.md only.
+# ============================================================================
+docs/STATE.md
+docs/CHANGELOG.md
+docs/BRIEF.md
+docs/PLAN.md
+docs/DECISIONS.md
+docs/DEV.md

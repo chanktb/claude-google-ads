@@ -1,0 +1,11 @@
+{
+  "name": "claude-google-ads",
+  "owner": { "name": "Khue Tran", "url": "https://khuetran.com" },
+  "plugins": [
+    {
+      "name": "claude-google-ads",
+      "source": ".",
+      "description": "Find where your Google Ads budget leaks, cut waste, and scale your ecommerce store safely. Audit · money-leak diagnostics · plan · campaign builders · safe push · monitor · optimize."
+    }
+  ]
+}

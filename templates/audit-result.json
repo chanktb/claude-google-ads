@@ -1,0 +1,68 @@
+{
+  "result_version": 1,
+  "_comment": "Structured output of the audit skill. audit_to_html.py renders this into a self-contained, client-ready HTML report. Generic example below.",
+  "account": { "name": "Example Store", "customer_id": "123-456-7890", "currency": "USD" },
+  "generated": "2026-06-26",
+  "period": "Last 30 days",
+  "health_score": 78,
+  "grade": "B",
+  "wasted_spend_monthly": 1180,
+  "headline": "Solid foundation; the biggest gains are in conversion-tracking verification and search-term hygiene.",
+  "categories": [
+    {
+      "name": "Conversion Tracking", "weight": 25, "score": 85,
+      "fixable": [
+        { "id": "G-CT3", "title": "Conversion value tracking is static", "status": "WARNING", "severity": "High", "points": 6, "fix": "Send dynamic order values from the store instead of a flat value." }
+      ],
+      "unverified": [
+        { "id": "G-CT4", "title": "Enhanced Conversions recording", "severity": "Critical", "note": "Confirm 'Recording' status in Goals." },
+        { "id": "G-CT5", "title": "Consent Mode v2 advanced", "severity": "Critical", "note": "Confirm advanced mode is deployed." }
+      ]
+    },
+    {
+      "name": "Wasted Spend / Negatives", "weight": 20, "score": 64,
+      "fixable": [
+        { "id": "G-WS2", "title": "Thin negative keyword coverage", "status": "FAIL", "severity": "Critical", "points": 10, "fix": "Add a shared negative list (DIY, job-seeker, location) from the search-terms report." },
+        { "id": "G-WS3", "title": "$1,180/mo on non-converting terms", "status": "FAIL", "severity": "High", "points": 6, "fix": "Negate the 12 terms with >$10 spend and 0 conversions." }
+      ],
+      "unverified": []
+    },
+    {
+      "name": "Account Structure", "weight": 15, "score": 82,
+      "fixable": [
+        { "id": "G-AS3", "title": "Two ad groups have only 1 RSA", "status": "WARNING", "severity": "High", "points": 4, "fix": "Add a second RSA to each so Google can test variants." }
+      ],
+      "unverified": []
+    },
+    {
+      "name": "Keywords & Quality Score", "weight": 15, "score": 88,
+      "fixable": [
+        { "id": "G-KW2", "title": "Avg Quality Score 6.4", "status": "WARNING", "severity": "Medium", "points": 3, "fix": "Tighten ad-group themes for the 5 lowest-QS keywords." }
+      ],
+      "unverified": []
+    },
+    {
+      "name": "Ads & Assets", "weight": 15, "score": 79,
+      "fixable": [
+        { "id": "G-AD5", "title": "PMax brand exclusion not applied", "status": "FAIL", "severity": "High", "points": 5, "fix": "Apply a brand exclusion list so PMax stops claiming brand conversions." }
+      ],
+      "unverified": []
+    },
+    {
+      "name": "Settings & Targeting", "weight": 10, "score": 70,
+      "fixable": [
+        { "id": "G-ST3", "title": "Location set to Presence or Interest", "status": "WARNING", "severity": "High", "points": 3, "fix": "Switch to 'Presence' to stop out-of-market spend." }
+      ],
+      "unverified": []
+    }
+  ],
+  "quick_wins": [
+    { "title": "Add shared negative keyword list", "severity": "Critical", "minutes": 10, "impact": "Recovers ~$1,180/mo wasted spend" },
+    { "title": "Apply PMax brand exclusion", "severity": "High", "minutes": 5, "impact": "Cleaner attribution, truer ROAS" },
+    { "title": "Fix location targeting to Presence", "severity": "High", "minutes": 2, "impact": "Stops out-of-market clicks" }
+  ],
+  "notes": [
+    "Google Ads vs GA4 ROAS gap is 28% — normal methodology difference, not a tracking bug.",
+    "Conversion setup is healthy: the channel Purchase is the working primary; GA4 purchase is correctly secondary."
+  ]
+}

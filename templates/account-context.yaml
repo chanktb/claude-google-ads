@@ -1,0 +1,109 @@
+# ============================================================================
+# account-context.yaml  —  the reusable backbone of claude-google-ads
+# ----------------------------------------------------------------------------
+# Produced by : skills/setup
+# Consumed by : audit · measurement · plan · builder-* · pusher · tracker · optimizer
+#
+# One file per business. For multi-site businesses, either keep one file with
+# per-site blocks, or one file per site plus a shared block (see `shared`).
+# Everything business-specific lives HERE. Skills stay generic.
+# ============================================================================
+
+schema_version: 1
+
+business:
+  name: ""                 # "Acme Nail Supply"
+  vertical: ""             # ecommerce | leadgen | local | saas | b2b-services | ...
+  model: ""                # b2c | b2b | b2b2c
+  primary_market: ""       # "US"
+  currency: "USD"
+  languages: ["en"]
+  aov: null                # average order value (number) — used by plan for forecasting
+  # Optional margin tiers — lets plan/optimizer set different ROAS goals per tier.
+  margin_tiers: []
+  # - name: "house-brand"
+  #   gross_margin: 0.70
+  #   min_roas: 1.5        # a low ROAS can still be profitable for high-margin lines
+  # - name: "distributed"
+  #   gross_margin: 0.20
+  #   min_roas: 4.0
+
+# ── CONNECTIONS REGISTRY ────────────────────────────────────────────────────
+# The single place that records HOW to reach every data source. `setup` fills this
+# (probe MCP -> env/secrets file -> data-hub script -> ask) so no downstream skill
+# re-discovers a connector or runs blind. status: connected | available | missing.
+# If a source is `missing`, dependent skills label their output "UNVERIFIED — connect <source>"
+# and OMIT the number — they must NEVER fabricate it.
+connections:
+  google_ads: { status: "missing", via: "" }        # via: "mcp:<id>"
+  store:      { status: "missing", via: "", guide: "connect your store MCP, or point setup at a Shopify/Woo Admin token in a local .env" }
+  ga4:        { status: "missing", via: "", guide: "connect a GA4 MCP, or a GA4 client/script (property id below)" }
+  merchant:   { status: "missing", via: "", guide: "link Google Merchant Center + add a Content-API connector (REQUIRED for feed health)" }
+  gsc:        { status: "missing", via: "", guide: "connect Search Console (optional — organic cross-read)" }
+
+data_source:               # product / collection / sales data — MCP-agnostic
+  type: "none"             # shopify | woocommerce | bigcommerce | csv | none
+  mcp_id: ""               # connected MCP server id, if any
+  catalog_url: ""          # storefront base URL (used to verify landing-page URLs are live)
+  merchant_center_id: ""   # for Shopping / PMax feed checks
+  notes: ""
+
+google_ads:
+  login_customer_id: ""    # MCC id, if managed under one
+  customer_id: ""          # the account that actually runs campaigns
+  currency: "USD"
+  time_zone: ""
+  mcp_id: ""               # Google Ads MCP id (typically READ-only GAQL)
+  api_write: false         # true ONLY if mutate/write is available -> unlocks pusher auto-create
+  conversion_actions: []   # filled by setup/measurement
+  # - name: "Purchase"
+  #   category: purchase    # purchase | lead | signup | contact | ...
+  #   primary: true
+  #   source: "ga4-import"  # gtag | gtm | ga4-import | enhanced | offline
+  #   counts: "one"         # one | every
+  #   value_tracking: true
+
+measurement:
+  ga4:
+    enabled: false
+    property_id: ""
+    mcp_id: ""
+    scope: "per-site"      # shared | per-site
+  gsc:
+    enabled: false
+    site_url: ""
+    scope: "shared"        # shared | per-site
+  enhanced_conversions: false
+  server_side: false       # CAPI / server-side tagging present?
+
+brand:
+  brand_terms: []          # ["acme", "acme nail"] — branded-search targeting + PMax brand exclusion
+  competitor_terms: []     # brands NOT sold on the site -> negative keyword candidates
+  trademark_notes: ""
+
+campaign_defaults:
+  target_roas: null        # null = no target during the learning phase (ecommerce/value accounts)
+  target_cpa: null         # for leadgen/SaaS/local (CPA-based) accounts instead of target_roas
+  daily_budget: null
+  bidding_ramp: null       # set per vertical by setup — see references/vertical-defaults.md
+                           # (ecommerce: "maxconv-value-then-troas"; leadgen/saas/local: "maxconv-then-tcpa")
+  final_url_expansion: false
+  auto_created_assets: false
+  conversion_goal_scope: "campaign"   # account | campaign — set per-campaign goals to avoid leakage
+
+# User-defined rules. Builder/optimizer MUST respect these and never emit a plan
+# that violates one. This is where an operator encodes account-specific policy.
+guardrails: []
+# - id: "pmax-brand-exclusion"
+#   rule: "PMax campaigns use brand exclusion lists, never brand negative keywords."
+#   applies_to: [builder, optimizer]
+# - id: "house-brand-low-roas-ok"
+#   rule: "Do not flag house-brand campaigns for low ROAS if above margin_tier min_roas."
+#   applies_to: [audit, optimizer]
+
+# Multi-site only: declare what is shared across sites vs split per site.
+shared:
+  enabled: false
+  shared_assets: []        # e.g. ["gsc", "customer-match-list"]
+  per_site: []             # e.g. ["ga4", "google_ads.customer_id"]
+  notes: ""

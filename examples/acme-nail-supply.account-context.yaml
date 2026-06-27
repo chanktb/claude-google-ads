@@ -1,0 +1,85 @@
+# ============================================================================
+# EXAMPLE (FAKE) account-context.yaml — safe to publish.
+# "Acme Nail Supply" is fictional. Shows what a filled-in context looks like.
+# Real businesses produce their own via the `setup` skill, kept OUTSIDE this repo.
+# ============================================================================
+
+schema_version: 1
+
+business:
+  name: "Acme Nail Supply"
+  vertical: "ecommerce"
+  model: "b2b2c"
+  primary_market: "US"
+  currency: "USD"
+  languages: ["en"]
+  aov: 85
+  margin_tiers:
+    - name: "house-brand"
+      gross_margin: 0.70
+      min_roas: 1.5
+    - name: "distributed"
+      gross_margin: 0.22
+      min_roas: 4.0
+
+data_source:
+  type: "shopify"
+  mcp_id: "example-shopify-mcp"
+  catalog_url: "https://acme-nail-supply.example.com"
+  merchant_center_id: "0000000"
+  notes: "Fake example store."
+
+google_ads:
+  login_customer_id: "000-000-0000"
+  customer_id: "111-111-1111"
+  currency: "USD"
+  time_zone: "America/Los_Angeles"
+  mcp_id: "example-google-ads-mcp"
+  api_write: false
+  conversion_actions:
+    - name: "Purchase"
+      category: "purchase"
+      primary: true
+      source: "ga4-import"
+      counts: "one"
+      value_tracking: true
+
+measurement:
+  ga4:
+    enabled: true
+    property_id: "000000000"
+    mcp_id: "example-ga4-mcp"
+    scope: "per-site"
+  gsc:
+    enabled: true
+    site_url: "https://acme-nail-supply.example.com"
+    scope: "shared"
+  enhanced_conversions: true
+  server_side: false
+
+brand:
+  brand_terms: ["acme", "acme nail", "acme nail supply"]
+  competitor_terms: ["rival nail co", "bigbox nails"]
+  trademark_notes: "Own-brand terms only; no competitor TM in ad copy."
+
+campaign_defaults:
+  target_roas: null
+  daily_budget: 80
+  bidding_ramp: "maxconv-value-then-troas"
+  final_url_expansion: false
+  auto_created_assets: false
+  conversion_goal_scope: "campaign"
+
+guardrails:
+  - id: "pmax-brand-exclusion"
+    rule: "PMax campaigns use brand exclusion lists, never brand negative keywords."
+    applies_to: [builder, optimizer]
+  - id: "house-brand-low-roas-ok"
+    rule: "Do not flag house-brand campaigns for low ROAS if above margin_tier min_roas."
+    applies_to: [audit, optimizer]
+
+shared:
+  enabled: false
+  shared_assets: []
+  per_site: []
+  notes: ""

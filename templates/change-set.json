@@ -1,0 +1,105 @@
+{
+  "spec_version": 1,
+  "kind": "change-set",
+  "account": {
+    "customer_id": "0000000000",
+    "login_customer_id": "0000000000",
+    "currency": "USD"
+  },
+  "guardrails": [
+    "change-event-cooldown",
+    "pmax-brand-exclusion",
+    "house-brand-low-roas-ok"
+  ],
+  "actions": [
+    {
+      "id": "neg-search-diy",
+      "type": "add_negatives",
+      "target": { "campaign": "Search - Non-Brand", "campaign_id": "1111111111", "campaign_type": "search" },
+      "scope": "shared_list",
+      "list_name": "Global Negatives - DIY/Info",
+      "negatives": [
+        { "text": "how to apply gel polish", "match_type": "phrase" },
+        { "text": "diy nail kit", "match_type": "phrase" },
+        { "text": "free", "match_type": "exact" }
+      ],
+      "reason": "$112 spend / 0 conv over 30d on DIY + 'free' terms (search_term_view). Informational intent, not buyers.",
+      "diagnostic": "D5",
+      "est_impact_per_mo": 112,
+      "push_path": "editor_csv",
+      "is_scale": false
+    },
+    {
+      "id": "geo-pmax-weak",
+      "type": "exclude_geo",
+      "target": { "campaign": "PMax - Catalog", "campaign_id": "2222222222", "campaign_type": "performance_max" },
+      "locations": [
+        { "name": "Nevada,United States" },
+        { "name": "Puerto Rico" }
+      ],
+      "reason": "Nevada $97 @ 0 conv; Puerto Rico $119 @ 1.44x — both below 2.0x over 30d. PMax = location exclusion (no per-geo bid).",
+      "diagnostic": "D3",
+      "est_impact_per_mo": 140,
+      "push_path": "ui",
+      "is_scale": false
+    },
+    {
+      "id": "prod-pmax-burn",
+      "type": "exclude_products",
+      "target": { "campaign": "PMax - Catalog", "campaign_id": "2222222222", "campaign_type": "performance_max", "asset_group": "Catalog - All" },
+      "products": [
+        { "item_id": "SKU-1234", "title": "Discontinued Drill Bundle" }
+      ],
+      "reason": "$115 / 61 clicks / 0 conv over 30d; Merchant shows OUT OF STOCK -> exclude until restocked.",
+      "diagnostic": "D14",
+      "est_impact_per_mo": 115,
+      "push_path": "ui",
+      "is_scale": false
+    },
+    {
+      "id": "ext-pmax",
+      "type": "add_extensions",
+      "target": { "campaign": "PMax - Catalog", "campaign_id": "2222222222", "campaign_type": "performance_max" },
+      "sitelinks": [
+        { "text": "Shop Gel Polish", "url": "https://example.com/collections/gel" }
+      ],
+      "callouts": ["Free Shipping $99+", "Wholesale Pricing", "Same-Day Dispatch"],
+      "snippets": [],
+      "reason": "Campaign has 0 sitelinks / 0 callouts -> missing free SERP real estate. Copy from assets.",
+      "diagnostic": "D9",
+      "est_impact_per_mo": 0,
+      "push_path": "ui",
+      "is_scale": false
+    },
+    {
+      "id": "pause-ag-deadweight",
+      "type": "pause",
+      "target": { "campaign": "PMax - Catalog", "campaign_id": "2222222222", "campaign_type": "performance_max", "asset_group": "Catalog - Clearance" },
+      "entity": "asset_group",
+      "reason": "Clearance asset group: $240 spend / 0.6x ROAS over 30d, far below the 2.0x tier target. PMax frees this budget back to exploration (correct way to scale a PMax down — not a budget cut).",
+      "diagnostic": "D9",
+      "est_impact_per_mo": 144,
+      "push_path": "ui",
+      "is_scale": false
+    },
+    {
+      "id": "budget-up-receiver",
+      "type": "adjust_budget",
+      "target": { "campaign": "PMax - Best Sellers", "campaign_id": "3333333333", "campaign_type": "performance_max", "within_cooldown": false, "last_change_direction": "up" },
+      "current_daily": 100,
+      "new_daily": 110,
+      "direction": "up",
+      "reason": "Receiver of the reallocation: 4.2x ROAS, primary_status not limited, 21 conv/wk. +10% step.",
+      "diagnostic": "D2",
+      "est_impact_per_mo": 300,
+      "push_path": "ui",
+      "is_scale": true
+    }
+  ],
+  "provenance": {
+    "built_by": "optimizer",
+    "context_source": "account-context.yaml",
+    "source_report": "MONEY-LEAK-REPORT.md",
+    "verified": false
+  }
+}
