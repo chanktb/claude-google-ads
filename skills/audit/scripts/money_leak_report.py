@@ -35,6 +35,7 @@ BUNDLE SCHEMA (bundle.json) — every section optional; report degrades graceful
   "ext_text":  [{"campaign_id","field_type","text"}],                       # sitelink/callout/snippet TEXT
   "negatives": [{"campaign_id","source","text","match_type"}],             # campaign + shared-list + brand-list
   "final_urls":[{"campaign_id","url"}],
+  "content_labels":[{"campaign_id","content_label_type"}],   # campaign_criterion type=CONTENT_LABEL (DV-G/PG/T/MA etc.)
   "signals":   [{"campaign_id","asset_group_id","search_theme","audience"}],
   "conversion_lag":[{"campaign_id"?,"conversion_lag_bucket","conversions","conversions_value"}],
   "change_events": [{"change_date_time","change_resource_type","user_email","campaign_name"}],
@@ -189,7 +190,7 @@ def main():
     chan_c=bycamp("channel"); dev_c=bycamp("device"); geo_c=bycamp("geo"); dp_c=bycamp("dayparting")
     asset_c=bycamp("assets"); desc_c=bycamp("descriptions"); ext_c=bycamp("extensions"); exttx_c=bycamp("ext_text")
     neg_c=bycamp("negatives"); furl_c=bycamp("final_urls"); sig_c=bycamp("signals"); prod_c=bycamp("products")
-    sch_c=bycamp("schedule")
+    sch_c=bycamp("schedule"); cl_c=bycamp("content_labels")
     # Embedded US-state table fills any id the bundle didn't resolve; bundle geo_names overrides it.
     geo_names={**US_STATE_GEO,**{str(k):v for k,v in (b.get("geo_names") or {}).items()}}
     def gname(rid):
@@ -629,8 +630,20 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         ec=(b.get("measurement") or {}).get("enhanced_conversions") if isinstance(b.get("measurement"),dict) else b.get("enhanced_conversions")
         if ec is True: srows2.append(vrow("GOOD","Enhanced Conversions","enabled (customer.conversion_tracking_setting)",cnt))
         elif ec is False: srows2.append(vrow("FIX","Enhanced Conversions","NOT enabled — turn on for signal recovery",cnt,action="Enable Enhanced Conversions in the conversion settings."))
-        # Only the genuinely-unreadable settings remain verify-in-UI (confirmed 2026-06-28).
-        srows2.append(vrow("VERIFY","FUE · asset automation · content suitability","not in the Ads API on this version",cnt,action="Verify in UI: Final URL Expansion + URL exclusions, auto-created assets/text customization, content-suitability/placement exclusions."))
+        # Content-label exclusions DO read via campaign_criterion type=CONTENT_LABEL (verified 2026-06-28: the
+        # field is recognized; an empty result = none configured, NOT "unreadable"). Report from pulled data.
+        if was_pulled("content_labels"):
+            cls=cl_c.get(cid,[])
+            if cls:
+                names=", ".join(sorted({esc(str(x.get("content_label_type") or x.get("type") or "")) for x in cls if (x.get("content_label_type") or x.get("type"))}))
+                srows2.append(vrow("GOOD","Content-label exclusions",f"{len(cls)} configured: {names}",cnt))
+            else:
+                srows2.append(vrow("GOOD","Content-label exclusions","none configured (readable via API; fine for Search/Shopping — for PMax/Display/Video consider DV-MA + sensitive-content exclusions)",cnt))
+        else:
+            srows2.append(vrow("VERIFY","Content-label exclusions","not pulled — re-run",cnt,action="Pull campaign_criterion WHERE type='CONTENT_LABEL' (content_label.type). Empty result = none set, not unreadable."))
+        # Genuinely-unreadable on this MCP/API version (every variant tested): FUE, auto-assets, and the VIDEO
+        # brand-safety inventory mode (campaign.video_brand_safety_suitability = UNRECOGNIZED_FIELD here).
+        srows2.append(vrow("VERIFY","FUE · asset automation · video inventory mode","not in the Ads API on this version",cnt,action="Verify in UI: Final URL Expansion + URL exclusions, auto-created assets/text customization, and the Expanded/Standard/Limited brand-safety inventory mode (video_brand_safety_suitability)."))
         srows2.append(vrow("VERIFY","Consent Mode v2 · server-side/CAPI","tag-side config — not an Ads entity",cnt,action="Verify in GTM / Google Tag Diagnostics (not a pull failure)."))
         chf=[f for f in cfind.get(cid,[]) if f["dim"]=="change"]
         if chf:

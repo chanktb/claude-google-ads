@@ -53,6 +53,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **"Content Suitability" was wrongly reported as fully unreadable — it isn't.** Digital content-LABEL
+  exclusions (DV-G/PG/T/MA + content-type exclusions) DO read via `campaign_criterion WHERE type='CONTENT_LABEL'`
+  (`content_label.type`) — verified live (field recognized; an empty result means *none configured*, not
+  *unreadable*). The audit now pulls and reports them from data (GOOD when set or cleanly "none configured";
+  VERIFY only if the dimension wasn't pulled). Only the separate **video brand-safety inventory mode**
+  (`campaign.video_brand_safety_suitability`, Expanded/Standard/Limited) is genuinely UNRECOGNIZED on this MCP/API
+  version and stays verify-in-UI. The old note blaming `customer.content_label_exclusions` was wrong-method (that
+  field name doesn't exist). SKILL + gaql-notes corrected; bundle gains a `content_labels` key.
 - **Fixed an INVERTED location-targeting enum that produced a false "switch to Presence" finding.** The
   generator mapped `positive_geo_target_type = 7` to PRESENCE_OR_INTEREST (a leak) — but the official v21 enum
   is `5 = PRESENCE_OR_INTEREST`, `6 = SEARCH_INTEREST`, **`7 = PRESENCE`** (the correct, recommended setting).

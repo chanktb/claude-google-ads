@@ -128,11 +128,15 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      this: 7 is the GOOD value. (Verified live + against the v21 proto 2026-06-28.) **Enhanced Conversions** `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled`
      + `.accepted_customer_data_terms`; **final URLs** via `landing_page_view` / `expanded_landing_page_view`;
      **RSA text + per-asset metrics** via `ad_group_ad_asset_view`; **placement exclusions** via
-     `campaign_criterion.placement.url`. (Exact queries: `references/gaql-notes.md`.)
+     `campaign_criterion.placement.url`; **content-label exclusions** (digital content labels DV-G/PG/T/MA) via
+     `campaign_criterion` WHERE `type='CONTENT_LABEL'` (`content_label.type`) — **this READS; an empty result =
+     none configured, NOT unreadable** (do not punt it to UI). bundle key `content_labels:[{campaign_id,content_label_type}]`.
+     (Exact queries: `references/gaql-notes.md`.)
    - **⚠️ "verify in UI" is ONLY these confirmed-blocked fields** (every variant tested 2026-06-28) — do NOT
      mark anything else UI-only: Final URL Expansion toggle (`url_expansion_opt_out` UNRECOGNIZED), asset
-     automation (`asset_automation_settings` PROHIBITED/RepeatedComposite), content suitability
-     (`content_label_exclusions` UNRECOGNIZED), PMax `asset_group_asset.performance_label` (UNRECOGNIZED — use
+     automation (`asset_automation_settings` PROHIBITED/RepeatedComposite), the **video brand-safety inventory
+     mode** (`campaign.video_brand_safety_suitability` UNRECOGNIZED on this version — Expanded/Standard/Limited),
+     PMax `asset_group_asset.performance_label` (UNRECOGNIZED — use
      `asset_group.ad_strength` + per-asset cost/conv), and **Consent Mode v2 / server-side-CAPI** (tag-side by
      design — verify in GTM, NOT a pull failure). EVERYTHING ELSE is in the API: a fetch that returns nothing =
      wrong method (field/resource/missing `metrics.*`/enum-to-drop), **retry** — see `references/gaql-notes.md`.

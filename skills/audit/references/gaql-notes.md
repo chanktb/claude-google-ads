@@ -78,11 +78,19 @@ These were once mislabeled "verify in UI" but DO read via GAQL — pull them, do
 - **RSA headline/description text + per-asset metrics** — `ad_group_ad_asset_view` (`.field_type` 2=headline /
   3=description, `asset.text_asset.text`, `metrics.*`, `.performance_label` reads for SEARCH).
 - **Placement exclusions** — `campaign_criterion.placement.url` + `campaign_criterion.negative=true` (drop `.type`).
+- **Content-label exclusions (a.k.a. "Content suitability" / digital content labels DV-G/PG/T/MA + content-type
+  exclusions)** — `SELECT campaign.id, campaign_criterion.content_label.type, campaign_criterion.negative,
+  campaign_criterion.status FROM campaign_criterion WHERE campaign_criterion.type='CONTENT_LABEL'`. **This READS
+  (verified live on ND 2026-06-28 — field recognized, returned an empty set = none configured). An empty result
+  means none are set, it does NOT mean unreadable — do not punt this to UI.** bundle key
+  `content_labels:[{campaign_id,content_label_type}]`. (The OLD note claiming `customer.content_label_exclusions`
+  is UNRECOGNIZED was wrong-method: that field name doesn't exist; the data lives on `campaign_criterion`.)
 
 **Genuinely NOT readable on this MCP/API version (confirmed, every variant tried — record as verify-in-UI):**
 `campaign.url_expansion_opt_out` / `final_url_expansion_opt_out` (FUE toggle) → UNRECOGNIZED;
 `campaign.asset_automation_settings` → RepeatedComposite/PROHIBITED, `automatically_created_assets_setting` →
-UNRECOGNIZED; `customer.content_label_exclusions` (content suitability) → UNRECOGNIZED;
+UNRECOGNIZED; `campaign.video_brand_safety_suitability` (the Expanded/Standard/Limited inventory MODE — distinct
+from the content-label exclusions above, which DO read) → UNRECOGNIZED;
 `asset_group_asset.performance_label` (PMax) → UNRECOGNIZED (substitute: `asset_group.ad_strength` + per-asset
 cost/conv from `asset_group_asset`).
 
