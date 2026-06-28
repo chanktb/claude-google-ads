@@ -20,8 +20,9 @@ BUNDLE SCHEMA (bundle.json) — every section optional; report degrades graceful
 {
   "meta": {"account_name","customer_id","window_start","window_end"},
   "active_campaigns": [{"id","name","channel_type","budget_micros","target_roas","bidding_strategy_type",
-      "system_status","primary_status","brand_guidelines_enabled",
+      "system_status","primary_status","brand_guidelines_enabled","geo_target_type",  # 7=PRESENCE_OR_INTEREST,5=PRESENCE
       "cost_micros","conversions","conversions_value","impressions","clicks"}],
+  "enhanced_conversions": true,   # customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled (bool)
   "channel":   [{"campaign_id","ad_network_type","cost_micros","conversions","conversions_value","clicks"}],
   "device":    [{"campaign_id","device","cost_micros","conversions","conversions_value","clicks"}],
   "geo":       [{"campaign_id","geo_region_id","location_type","cost_micros","conversions","conversions_value","clicks"}],
@@ -589,7 +590,19 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         if nprows: groups.append(("#10b981","Negatives &amp; products",nprows))
         # settings verify-in-UI
         srows2=[]
-        srows2.append(vrow("VERIFY","Location · FUE · Asset optimization · Content Suitability","API can't read these",cnt,action="Verify: Presence (not Interest), FUE + URL exclusions, text/brand guideline, placement exclusions."))
+        # Location targeting type READS via campaign.geo_target_type_setting — show it, don't punt to UI.
+        gt=c.get("geo_target_type") or (c.get("geo_target_type_setting") or {}).get("positive_geo_target_type")
+        if gt in (7,"7","PRESENCE_OR_INTEREST"):
+            srows2.append(vrow("FIX","Location targeting","Presence-OR-Interest — serves users merely interested in the geo",cnt,action="Switch to Presence-only (People in your targeted locations) to cut interest-based waste."))
+        elif gt in (5,"5","PRESENCE"):
+            srows2.append(vrow("GOOD","Location targeting","Presence-only (people physically in the geo)",cnt))
+        # Enhanced Conversions READS at customer level (set once on the bundle meta).
+        ec=(b.get("measurement") or {}).get("enhanced_conversions") if isinstance(b.get("measurement"),dict) else b.get("enhanced_conversions")
+        if ec is True: srows2.append(vrow("GOOD","Enhanced Conversions","enabled (customer.conversion_tracking_setting)",cnt))
+        elif ec is False: srows2.append(vrow("FIX","Enhanced Conversions","NOT enabled — turn on for signal recovery",cnt,action="Enable Enhanced Conversions in the conversion settings."))
+        # Only the genuinely-unreadable settings remain verify-in-UI (confirmed 2026-06-28).
+        srows2.append(vrow("VERIFY","FUE · asset automation · content suitability","not in the Ads API on this version",cnt,action="Verify in UI: Final URL Expansion + URL exclusions, auto-created assets/text customization, content-suitability/placement exclusions."))
+        srows2.append(vrow("VERIFY","Consent Mode v2 · server-side/CAPI","tag-side config — not an Ads entity",cnt,action="Verify in GTM / Google Tag Diagnostics (not a pull failure)."))
         chf=[f for f in cfind.get(cid,[]) if f["dim"]=="change"]
         if chf:
             srows2.append(vrow("WATCH","Stability / cooldown",esc(chf[0]["title"]),cnt,action="Hold budget/target moves until Smart Bidding restabilizes."))

@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Empirically eliminated false "verify in UI" labels.** Tested every blocked field against the live API:
+  **location targeting type** (`campaign.geo_target_type_setting` — Presence vs Interest), **Enhanced
+  Conversions** (`customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled`), **final URLs**
+  (`landing_page_view` / `expanded_landing_page_view`), **RSA text + per-asset metrics** (`ad_group_ad_asset_view`),
+  and **placement exclusions** (`campaign_criterion.placement.url`) ALL read via GAQL and were wrongly punted to
+  the UI. Skill + gaql-notes now carry the exact queries; the report renders location type + Enhanced Conversions
+  and drops the blanket "Location/FUE/... API can't read these" card. Only the truly-unreadable remain verify-in-UI:
+  FUE toggle, asset-automation, content-suitability (UNRECOGNIZED on this API version) and Consent Mode v2 /
+  server-side-CAPI (tag-side by design, not Ads entities). Merchant feed health needs the Content API connector.
 - **Corrected a false "asset / extension text isn't pullable" claim** caught by diffing against a known-good
   prior report. The earlier prior run's bundle clearly carried PMax **asset text + per-asset cost**
   (`asset_group_asset` → `asset.text_asset.text` + `metrics.*`), **descriptions** text, and **extension text**

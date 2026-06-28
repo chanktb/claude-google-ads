@@ -122,14 +122,20 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      (`asset.sitelink_asset.link_text`, `asset.callout_asset.callout_text`, `asset.structured_snippet_asset.values`,
      `asset.price_asset.*`) or the `asset` resource by id. bundle key `ext_text:[{campaign_id,field_type,text}]`.
    - **conversion lag** (D12): `segments.conversion_lag_bucket` — the "can I trust short-window ROAS?" gate.
-   - **⚠️ "verify in UI" is ONLY for confirmed non-API fields** — Final URL Expansion, content suitability,
-     location Presence/Interest, asset automation, `asset_group_asset.performance_label`, and
-     `ad_group_ad.ad.final_urls` / RSA `responsive_search_ad.headlines` (serializer-blocked — but RSA asset
-     text IS reachable via `ad_group_ad_asset_view`). Asset TEXT, extension TEXT, channel, dayparting, geo
-     names are NOT in this list — they are all pullable. EVERYTHING ELSE is in the API: a fetch that returns
-     nothing = wrong method (field/
-     resource/missing `metrics.*`/enum-to-drop), **retry** — see `references/gaql-notes.md`. A "we can't see it,
-     check the UI" on API-available data is the #1 way this audit loses a user's trust.
+   - **settings & measurement that DO read** (pull these — they were once wrongly punted to UI): **location type**
+     `campaign.geo_target_type_setting.positive_geo_target_type` (7=PRESENCE_OR_INTEREST is a leak → recommend
+     Presence-only); **Enhanced Conversions** `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled`
+     + `.accepted_customer_data_terms`; **final URLs** via `landing_page_view` / `expanded_landing_page_view`;
+     **RSA text + per-asset metrics** via `ad_group_ad_asset_view`; **placement exclusions** via
+     `campaign_criterion.placement.url`. (Exact queries: `references/gaql-notes.md`.)
+   - **⚠️ "verify in UI" is ONLY these confirmed-blocked fields** (every variant tested 2026-06-28) — do NOT
+     mark anything else UI-only: Final URL Expansion toggle (`url_expansion_opt_out` UNRECOGNIZED), asset
+     automation (`asset_automation_settings` PROHIBITED/RepeatedComposite), content suitability
+     (`content_label_exclusions` UNRECOGNIZED), PMax `asset_group_asset.performance_label` (UNRECOGNIZED — use
+     `asset_group.ad_strength` + per-asset cost/conv), and **Consent Mode v2 / server-side-CAPI** (tag-side by
+     design — verify in GTM, NOT a pull failure). EVERYTHING ELSE is in the API: a fetch that returns nothing =
+     wrong method (field/resource/missing `metrics.*`/enum-to-drop), **retry** — see `references/gaql-notes.md`.
+     A "we can't see it, check the UI" on API-available data is the #1 way this audit loses a user's trust.
    - **GAQL gotcha:** any field used in a `WHERE` filter MUST also appear in the `SELECT` clause, or the API
      returns `EXPECTED_REFERENCED_FIELD_IN_SELECT_CLAUSE` (e.g. filtering on `campaign.status` requires
      selecting it). If a field is rejected, drop just that field and re-run — don't abandon the whole pull.

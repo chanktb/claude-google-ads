@@ -61,6 +61,32 @@ returns impressions ONLY (no cost/conv).
   A `campaign_asset.field_type`-only pull gives counts; add the asset text for the real extensions.
 | `campaign_shared_set` / `shared_set` | `shared_set.type` | Rejected by some MCPs — omit it; infer list purpose from `shared_set.name` |
 
+## Settings & measurement fields — what READS vs what is genuinely UI/tag-side (empirically verified 2026-06-28)
+These were once mislabeled "verify in UI" but DO read via GAQL — pull them, don't punt:
+- **Location targeting type (Presence vs Interest)** — `campaign.geo_target_type_setting.positive_geo_target_type`
+  (7 = PRESENCE_OR_INTEREST, 5 = PRESENCE) + `.negative_geo_target_type`. Positive = PRESENCE_OR_INTEREST is a
+  real leak finding (serves users merely *interested* in the geo) → recommend Presence-only.
+- **Enhanced Conversions** — `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled` +
+  `.accepted_customer_data_terms` (customer-level is authoritative; conversion_action-level EC fails as a
+  RepeatedComposite — don't use it).
+- **Final URLs / landing pages** — `landing_page_view.unexpanded_final_url` and
+  `expanded_landing_page_view.expanded_final_url` (+ `metrics.*`, explicit date range). Use these — NOT
+  `ad_group_ad.ad.final_urls` (RepeatedScalar serializer block).
+- **RSA headline/description text + per-asset metrics** — `ad_group_ad_asset_view` (`.field_type` 2=headline /
+  3=description, `asset.text_asset.text`, `metrics.*`, `.performance_label` reads for SEARCH).
+- **Placement exclusions** — `campaign_criterion.placement.url` + `campaign_criterion.negative=true` (drop `.type`).
+
+**Genuinely NOT readable on this MCP/API version (confirmed, every variant tried — record as verify-in-UI):**
+`campaign.url_expansion_opt_out` / `final_url_expansion_opt_out` (FUE toggle) → UNRECOGNIZED;
+`campaign.asset_automation_settings` → RepeatedComposite/PROHIBITED, `automatically_created_assets_setting` →
+UNRECOGNIZED; `customer.content_label_exclusions` (content suitability) → UNRECOGNIZED;
+`asset_group_asset.performance_label` (PMax) → UNRECOGNIZED (substitute: `asset_group.ad_strength` + per-asset
+cost/conv from `asset_group_asset`).
+
+**Tag-side by DESIGN — never in the Ads API (don't keep retrying; verify in GTM / Google Tag Diagnostics):**
+Consent Mode v2 and server-side/CAPI are website tag configuration, not Ads entities. `accepted_customer_data_terms=true`
+is a prerequisite signal but not proof CAPI is live. State this as "tag-side, verify in GTM" — it is NOT a pull failure.
+
 ## Negatives live in TWO places — pull BOTH (GUARD-2)
 `campaign_criterion (negative=true)` is only campaign-level negatives. Shared negative LISTS (brand block,
 cross-brand block, location block, account-level) are separate: `campaign_shared_set` (which list attaches to
