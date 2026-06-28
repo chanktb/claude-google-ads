@@ -90,6 +90,7 @@ You can pass extra context after any command, e.g. `/claude-google-ads:pmax OPI 
 |---|---|
 | `skills/setup/scripts/validate_context.py` | validate account-context.yaml + readiness gates |
 | `skills/audit/scripts/money_leak_report.py` | bundle.json (+ audit-result.json) → the single `AUDIT.html` + MD reports |
+| `skills/audit/scripts/d14_product_report.py` | D14 burn×inventory JSON → visual `D14-PRODUCT-CHECK.html` (clickable PDP URLs + SKUs) |
 | `skills/plan/scripts/forecaster.py` | budget → conversions / CPA / ROAS bands |
 | `skills/builder-pmax/scripts/spec_to_xlsx.py` | campaign-spec.json → styled Excel blueprint |
 | `skills/pusher/scripts/validate_spec.py` | pre-push validation + spend-cap gate (Google-accurate char counts) |

@@ -185,7 +185,21 @@ layers, each from a different source — degrade cleanly, don't lump them as "ne
      connected. Do this whenever a store is connected.
   3. **Approval STATUS (Merchant Content API only)** — disapproved / GTIN / policy issues are NOT a GAQL field.
      If a Merchant connector is present, pull it; if not, flag ONLY this layer as verify-via-Merchant (not the
-     whole of D14). Each diagnostic yields a **Money-Leak Report** row: leak · evidence
+     whole of D14).
+  **D14 gets its OWN rendered HTML — `D14-PRODUCT-CHECK.html` — not just markdown.** When a store is connected,
+  join the zero-conversion burn products (layer 1) against live store inventory (layer 2) into ONE per-item JSON
+  (one row per burning product) with these fields per item: `campaign`, `title`, `brand`, `cost_30d`,
+  `clicks_30d`, `imp_30d`, `product_onlineStoreUrl` (the live PDP link — MANDATORY so the user can click to
+  check each SKU), `variant_sku`, `variant_price`, `variant_compareAtPrice`, `variant_inventoryPolicy`,
+  `total_available_all_locations`, `classification` (`OOS_DENY` | `LOW_STOCK` | `IN_STOCK_NEEDS_PDP_AUDIT`),
+  `reason`. Then render:
+  `python ${CLAUDE_PLUGIN_ROOT}/skills/audit/scripts/d14_product_report.py <items>.json --out-dir <workdir>
+  --account "<name>" --window "<range>"` → a visual, self-contained `D14-PRODUCT-CHECK.html`: KPI strip, one
+  color-coded section per classification (OOS=red / low-stock=amber / in-stock=blue), a burn bar per row, and a
+  **full SKU appendix where every product title links to its live storefront URL**. ALWAYS pull the PDP URL +
+  SKU (`product.onlineStoreUrl` / variant SKU from the store) — a D14 product list without clickable URLs is
+  incomplete; the user must be able to verify each item in one click. Each diagnostic yields a **Money-Leak
+  Report** row: leak · evidence
 (real numbers) · diagnosis (root cause, not symptom) · **$/month at risk** (formula shown) · exact fix ·
 discipline · confidence. Decode `bidding_strategy_system_status` FIRST (one field separates budget-capped vs
 tROAS-too-high vs starved vs learning). A generic "score 85" without these specific, dollar-quantified leaks is

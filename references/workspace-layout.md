@@ -11,7 +11,7 @@ across their disk.
   account-context.yaml          # THE backbone — business facts + the connections registry (below)
   CONNECTIONS.md                # optional human-readable map: which connector/token each source uses + how to run it
   raw/                          # large raw API pulls (bundle inputs). Safe to delete/regenerate.
-  audits/<YYYY-MM-DD>/          # AUDIT.html, bundle.json, audit-result.json, MONEY-LEAK-REPORT.md, DETAILED-ACCOUNT-REPORT.md
+  audits/<YYYY-MM-DD>/          # AUDIT.html, bundle.json, audit-result.json, MONEY-LEAK-REPORT.md, DETAILED-ACCOUNT-REPORT.md, D14-PRODUCT-CHECK.html
   measurement/<YYYY-MM-DD>/     # MEASUREMENT-REPORT.md
   plans/<YYYY-MM-DD>/           # GOOGLE-ADS-PLAN.md
   builds/<campaign>/            # campaign-spec.json, blueprint.xlsx, editor CSVs
