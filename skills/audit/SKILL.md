@@ -161,11 +161,17 @@ Beyond scoring, run the money-leak diagnostics in `${CLAUDE_PLUGIN_ROOT}/referen
 (D1 bid/target health · D2 budget pacing & allocation · D3 geo waste · D4 dayparting · D5 search-term/spam/
 wrong-brand · D6 structure/setup · D7 Quality Score · D8 PMax channel/placement · D9 ad copy/assets/extensions ·
 D10 settings hygiene · D11 audience signals/search themes · D12 conversion-lag gate · D13 change-history timeline ·
-**D14 product feed & Shopping performance**). **For ECOM, D14 is the highest-$ diagnostic** — run product
-PERFORMANCE (`shopping_performance_view`, Ads-side, always available) AND feed HEALTH (Merchant: OOS/disapproved).
-**If no Merchant connector is present, tell the user to connect Google Merchant Center** (it can also be run
-directly from a custom merchant server's venv) and proceed with product-performance only, flagging feed health as
-verify-via-Merchant. Each diagnostic yields a **Money-Leak Report** row: leak · evidence
+**D14 product feed & Shopping performance**). **For ECOM, D14 is the highest-$ diagnostic.** It has THREE
+layers, each from a different source — degrade cleanly, don't lump them as "needs Merchant":
+  1. **Product PERFORMANCE/identity (Ads, always available)** — `shopping_performance_view` returns full product
+     data through the Merchant LINK (item_id, title, brand, type, condition + cost/impr/conv). The "which product
+     burns / converts" leak. The products ARE in Google Ads — never say "no product data".
+  2. **Out-of-stock (STORE connector)** — cross-ref the spending item_ids against the store's live inventory
+     (Shopify/Woo). OOS spenders = pure waste, and this needs NO Merchant connector — only the store you already
+     connected. Do this whenever a store is connected.
+  3. **Approval STATUS (Merchant Content API only)** — disapproved / GTIN / policy issues are NOT a GAQL field.
+     If a Merchant connector is present, pull it; if not, flag ONLY this layer as verify-via-Merchant (not the
+     whole of D14). Each diagnostic yields a **Money-Leak Report** row: leak · evidence
 (real numbers) · diagnosis (root cause, not symptom) · **$/month at risk** (formula shown) · exact fix ·
 discipline · confidence. Decode `bidding_strategy_system_status` FIRST (one field separates budget-capped vs
 tROAS-too-high vs starved vs learning). A generic "score 85" without these specific, dollar-quantified leaks is

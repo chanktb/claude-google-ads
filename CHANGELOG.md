@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Clarified D14 product/feed into 3 sourced layers** (a CEO question: "products show in Google Ads via the
+  Merchant link — why report no data?"). Verified live: `shopping_performance_view` returns FULL product data
+  (item_id/title/brand/type/condition + cost/impr/conv) through the Ads↔Merchant link — products ARE in Ads and
+  the D4/D14 performance leak already uses them. Out-of-stock is reachable from the STORE connector (cross-ref
+  item_ids vs Shopify/Woo inventory) — no Merchant needed. ONLY the approval/disapproval/GTIN status layer needs
+  the Merchant Content API. Skill + gaql-notes now say this explicitly so the report never claims "no product data".
 - **Geo drains now surface ZERO-value spend, and PMax bid-adjust is stated correctly.** Drains previously
   hid states with spend but $0 conversion value (a `cost < $50` floor dropped them) and ranked only by raw
   cost — so pure-waste states could fall off the list; now 0-value states are included at a low floor, labeled
