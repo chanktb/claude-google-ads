@@ -32,9 +32,14 @@ These are generic; `guardrails` in the context may strengthen or add to them. Ho
   `primary_for_goal`.** A non-primary action does not enter Smart Bidding and does not affect performance —
   it's harmless; surface it as a NOTE (tidy-up), never a scored finding. Only a PRIMARY out-of-brand/micro
   action that an active campaign optimizes toward is a real issue. See `${CLAUDE_PLUGIN_ROOT}/references/conversion-tracking-logic.md`.
-- **GUARD-2 Negatives — campaign-level AND shared lists.** `campaign_criterion` (negative=true) is half.
-  MERGE with `campaign_shared_set` → `shared_set` → `shared_criterion` (incl. account-level lists). Only
-  flag a gap if terms are absent across ALL sources; if a shared list covers them, cite it, don't flag.
+- **GUARD-2 Negatives — FOUR sources, merge ALL.** (1) `campaign_criterion` (negative=true) — campaign-level;
+  (2) `campaign_shared_set` → `shared_set` → `shared_criterion` — SHARED LISTS (the bulk: e.g. "Account Level
+  Negative", "OPI Negative", brand blocks); (3) `customer_negative_criterion` — ACCOUNT-LEVEL negatives applied
+  account-wide; (4) `campaign_criterion.brand_list.shared_set` — brand exclusions. Only flag a gap if terms are
+  absent across ALL FOUR; if a shared/account list covers them, cite it, don't flag. **A `campaign_criterion`-only
+  pull is the #1 false-positive in this audit — it looks "thin" when coverage is actually 100+ terms/campaign.**
+  After merging all four, declare `pulled:[...,"negatives_complete"]` so the report renders a real verdict;
+  without that assertion a campaign-only bundle renders VERIFY (re-pull), never a false "weak negatives".
 - **GUARD-3 Budget scaling — check `change_event` first.** Before recommending a budget/bid increase,
   pull recent change history (~14d). A recent budget/bid/asset/structure change → recommend cooldown,
   not scale. (Strengthen with any `change-event-cooldown` guardrail in context.)
@@ -84,11 +89,15 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      (not just presence) so "thin extensions" findings use real counts. If it still errors, flag extensions
      **UNVERIFIED — verify in UI**, never assume present/absent.
    - search terms **both** sources: `search_term_view` + per-PMax `campaign_search_term_insight`
-   - **negatives from ALL sources (GUARD-2) — NOT just `campaign_criterion`:** also
-     `campaign_shared_set` (which shared lists attach to each campaign) → `shared_criterion` (the terms in
-     each list). A brand block / cross-brand block / location block usually lives in a SHARED list, so a pull
-     of `campaign_criterion` alone shows "no negatives" when coverage is actually extensive. **Never flag
-     G07/G14/G-PM5/G-PM6 (brand exclusion / negative coverage) without having pulled `shared_criterion`.**
+   - **negatives from ALL FOUR sources (GUARD-2) — NOT just `campaign_criterion`:**
+     (a) `campaign_shared_set` (which shared lists attach to each campaign — **count only `status=2` ENABLED;
+     many lists are `status=3` REMOVED/old**) → `shared_criterion` (the terms in each ENABLED list);
+     (b) `customer_negative_criterion` (account-level negatives applied to every campaign — a separate resource,
+     easy to miss; the first ND pull omitted it and produced a false "weak negatives" finding that had to be
+     corrected mid-audit). A brand block / cross-brand block / location block usually lives in a SHARED or
+     ACCOUNT-level list, so a `campaign_criterion`-only pull shows "no negatives" when coverage is actually
+     extensive. **Never flag G07/G14/G-PM5/G-PM6 (brand exclusion / negative coverage) without having pulled
+     `shared_criterion` AND `customer_negative_criterion`. After merging, declare `pulled:[...,"negatives_complete"]`.**
    - **PMax Brand exclusions are a SEPARATE layer from negative keywords — pull them explicitly:**
      `campaign_criterion` selecting `campaign_criterion.brand_list.shared_set` + `.negative`
      (filter `campaign_criterion.brand_list.shared_set IS NOT NULL`), then resolve each `shared_set.name`.

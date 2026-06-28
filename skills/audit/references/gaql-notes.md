@@ -98,24 +98,38 @@ cost/conv from `asset_group_asset`).
 Consent Mode v2 and server-side/CAPI are website tag configuration, not Ads entities. `accepted_customer_data_terms=true`
 is a prerequisite signal but not proof CAPI is live. State this as "tag-side, verify in GTM" — it is NOT a pull failure.
 
-## Negatives live in TWO places — pull BOTH (GUARD-2)
-`campaign_criterion (negative=true)` is only campaign-level negatives. Shared negative LISTS (brand block,
-cross-brand block, location block, account-level) are separate: `campaign_shared_set` (which list attaches to
-which campaign; `campaign_shared_set.status` 2=ENABLED, 3=REMOVED) → `shared_criterion`
-(`shared_criterion.keyword.text` + `.match_type`, filter `shared_set.id = <one>`). A PMax/Search **brand
-exclusion is most often a shared negative list**, so a `campaign_criterion`-only pull reports "no brand
-exclusion / no negatives" when coverage is actually extensive. Never decide G07/G14/G-PM5/G-PM6 without
-`shared_criterion`.
+## Negatives live in FOUR places — pull ALL (GUARD-2)
+`campaign_criterion (negative=true)` is only campaign-level negatives — usually a small fraction of coverage.
+1. **Campaign-level:** `campaign_criterion` negative=true.
+2. **Shared negative LISTS** (the bulk): `campaign_shared_set` (which list attaches to which campaign;
+   `campaign_shared_set.status` 2=ENABLED, 3=REMOVED) → `shared_set` (`shared_set.name`, `shared_set.member_count`
+   — **count only ENABLED, status=2; accounts accumulate many status=3 REMOVED/OLD lists**) → `shared_criterion`
+   (`shared_criterion.keyword.text` + `.match_type`, filter `shared_set.id = <one>`). On ND these are "Account
+   Level Negative" (74 terms), "OPI Negative" (63), "DND Negative" (46), brand blocks, etc.
+3. **Account-level:** `customer_negative_criterion` — negatives applied to EVERY campaign account-wide (placements,
+   content labels, apps, and account-level negative-keyword lists). **A separate resource that is easy to miss —
+   the first ND pull omitted it and the audit produced a false "weak negatives" finding that had to be corrected
+   mid-run.** NOTE: `customer_negative_criterion.keyword.text` is NOT a selectable field (UNRECOGNIZED) — select
+   `customer_negative_criterion.id`, `.type`, and the type-specific sub-fields (`.placement.url`,
+   `.youtube_channel.*`, `.content_label.type`, etc.); account-level negative KEYWORDS surface through the shared
+   negative-keyword list it references (read that list's terms via `shared_criterion`).
+4. **Brand exclusions** (next section) — `campaign_criterion.brand_list.shared_set`.
 
-## PMax Brand exclusions = a THIRD place, separate from both negatives above
+A `campaign_criterion`-only pull reports "no brand exclusion / no negatives" when coverage is actually 100+
+terms/campaign. **Never decide G07/G14/G-PM5/G-PM6 without `shared_criterion` AND `customer_negative_criterion`.**
+After merging all four, the bundle should declare `pulled:[...,"negatives_complete"]`; the report renders VERIFY
+(re-pull) rather than a confident verdict on a campaign-only bundle.
+
+## PMax Brand exclusions = a FOURTH place, separate from the negatives above
 The PMax "Brand exclusions" setting is stored as `campaign_criterion` with `negative=true` and a populated
 `campaign_criterion.brand_list.shared_set` — and its **`keyword.text` is EMPTY**. A pull that only selects
 `campaign_criterion.keyword.text` returns these rows blank and drops them, so you'll wrongly report "no brand
 exclusion" even when it's set. To read them: select `campaign_criterion.brand_list.shared_set` +
 `campaign_criterion.negative` (filter `campaign_criterion.brand_list.shared_set IS NOT NULL`), then resolve
 `shared_set.name` (the brand list's name, e.g. the own brand). Brand exclusions match by brand ENTITY (Google's brand
-DB), more robust than keyword negatives — accounts often run BOTH. So brand coverage = THREE sources:
-campaign-level negatives + shared negative lists + brand-list exclusions. Merge all three before flagging.
+DB), more robust than keyword negatives — accounts often run BOTH. So negative/brand coverage = FOUR sources:
+campaign-level negatives + shared negative lists + account-level (`customer_negative_criterion`) + brand-list
+exclusions. Merge all four before flagging.
 
 ## Keyword deduplication
 `keyword_view` + `segments.date` returns one row per keyword per day (× match types). Deduplicate by

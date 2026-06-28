@@ -53,6 +53,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Killed the recurring "weak negatives" false-positive (GUARD-2 now covers FOUR sources, and the report
+  refuses to judge an incomplete pull).** Negatives live in four places — `campaign_criterion`, shared lists
+  (`campaign_shared_set`→`shared_criterion`), **account-level `customer_negative_criterion`** (newly documented —
+  the source the first pull kept missing), and `campaign_criterion.brand_list.shared_set`. A bundle that merged
+  only campaign-level terms used to render "weak/none" (a false finding that had to be hand-corrected mid-audit);
+  now the generator is source-aware: campaign-only with no completeness assertion → **VERIFY "shared + account
+  lists NOT merged — re-pull"**, never a confident "weak". A real verdict requires either a list/account source in
+  the data or an explicit `pulled:[...,"negatives_complete"]`. SKILL GUARD-2 + gaql-notes now spell out all four
+  sources, the `status=2`-only rule for shared lists, and that `customer_negative_criterion.keyword.text` is not a
+  selectable field. (Verified live on ND: 100+ merged terms/campaign across "Account Level Negative"/"OPI
+  Negative"/brand blocks — the account is well-covered, not weak.)
 - **"Content Suitability" was wrongly reported as fully unreadable — it isn't.** Digital content-LABEL
   exclusions (DV-G/PG/T/MA + content-type exclusions) DO read via `campaign_criterion WHERE type='CONTENT_LABEL'`
   (`content_label.type`) — verified live (field recognized; an empty result means *none configured*, not

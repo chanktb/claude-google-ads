@@ -33,7 +33,9 @@ BUNDLE SCHEMA (bundle.json) — every section optional; report degrades graceful
   "descriptions":[{"campaign_id","text","cost_micros","conversions","clicks"}],
   "extensions":[{"campaign_id","field_type"}],                              # counts
   "ext_text":  [{"campaign_id","field_type","text"}],                       # sitelink/callout/snippet TEXT
-  "negatives": [{"campaign_id","source","text","match_type"}],             # campaign + shared-list + brand-list
+  "negatives": [{"campaign_id","source","text","match_type"}],             # source = campaign|shared-list:<name>|account-level|brand-list
+                                                                            #   (GUARD-2: merge ALL 4. account-level = customer_negative_criterion)
+                                                                            #   declare pulled:[...,"negatives_complete"] once all 4 are merged
   "final_urls":[{"campaign_id","url"}],
   "content_labels":[{"campaign_id","content_label_type"}],   # campaign_criterion type=CONTENT_LABEL (DV-G/PG/T/MA etc.)
   "signals":   [{"campaign_id","asset_group_id","search_theme","audience"}],
@@ -91,6 +93,7 @@ GRADE_C={"A":"#1e8e5a","B":"#2563eb","C":"#c8860a","D":"#d9622b","F":"#c0392b"}
 SEVC={"Critical":"#b91c1c","High":"#dc2626","Medium":"#d97706","Investigate":"#d97706","Low":"#16a34a","Opportunity":"#2563eb","PASS":"#16a34a","WARNING":"#d97706","FAIL":"#dc2626"}
 COOLDOWN_DAYS=14
 GEO_MIN, HOUR_MIN, DEV_MIN, ASSET_MIN, PROD_MIN = 50.0, 80.0, 50.0, 30.0, 30.0
+NEG_MIN = 15  # merged negative terms per active campaign below this = thin (only judged when all sources merged)
 WEAK=0.5; MARGINAL=0.7
 
 def ctname(v): return CT.get(v, v if isinstance(v,str) else str(v))
@@ -606,12 +609,23 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         # negatives / products
         nprows=[]
         ng=neg_c.get(cid,[]); bysrc=defaultdict(int)
-        for r2 in ng: bysrc[r2.get("source","?")]+=1
-        if "negatives" in b:
-            nprows.append(vrow("GOOD" if bysrc else "WATCH","Negatives &amp; brand blocks",(esc(" · ".join(f"{s} ({n})" for s,n in list(bysrc.items())[:6])) if bysrc else "none for this campaign"),cnt,action=("" if bysrc else "Attach negative + brand-exclusion lists.")))
+        for r2 in ng: bysrc[(r2.get("source") or "?")]+=1
+        total_neg=sum(bysrc.values())
+        # GUARD-2: negatives live in FOUR sources — campaign_criterion, shared lists (campaign_shared_set→
+        # shared_criterion), account-level (customer_negative_criterion), brand_list exclusions. A bundle that
+        # merged only "campaign"-source terms LOOKS thin but is just an incomplete pull → must NOT render "weak".
+        srckeys={str(k).lower() for k in bysrc}
+        has_listsrc=any(("shared" in k or "list" in k or "account" in k or "brand" in k) for k in srckeys)
+        neg_complete = has_listsrc or ("negatives_complete" in (_pulled_decl or []))
+        if "negatives" in b and neg_complete:
+            label=" · ".join(f"{s} ({n})" for s,n in sorted(bysrc.items(),key=lambda x:-x[1])[:6]) or "none for this campaign"
+            v="GOOD" if total_neg>=NEG_MIN else "WATCH"
+            nprows.append(vrow(v,"Negatives &amp; brand blocks",esc(f"{total_neg} terms — {label}"),cnt,action=("" if total_neg>=NEG_MIN else "Thin merged coverage — attach shared negative + brand-exclusion lists.")))
+        elif "negatives" in b:
+            # bundle has negatives but only campaign-level source and no completeness assertion = incomplete GUARD-2.
+            nprows.append(vrow("VERIFY","Negatives &amp; brand blocks",esc(f"{total_neg} campaign-level only — shared lists + account-level NOT merged"),cnt,action="Re-pull GUARD-2: campaign_shared_set→shared_criterion (ENABLED status=2) AND customer_negative_criterion, merge, then declare pulled:[negatives_complete]. Do NOT judge coverage on campaign_criterion alone."))
         else:
-            # GUARD-2: never claim "no negatives" without having pulled campaign_criterion + shared_set + brand-list.
-            nprows.append(vrow("VERIFY","Negatives &amp; brand blocks","not pulled — verify shared lists + brand exclusions",cnt,action="Pull campaign_shared_set → shared_criterion AND brand_list exclusions before judging coverage."))
+            nprows.append(vrow("VERIFY","Negatives &amp; brand blocks","not pulled — verify all FOUR sources",cnt,action="Pull campaign_criterion + campaign_shared_set→shared_criterion + customer_negative_criterion + brand_list before judging coverage."))
         prf=[f for f in cfind.get(cid,[]) if f["dim"]=="products"]
         if prf:
             nprows.append(vrow("WATCH","0-conv product burners",esc(prf[0]["title"]),cnt,action="Check Merchant: OOS → restock/exclude; in-stock → price/intent."))
