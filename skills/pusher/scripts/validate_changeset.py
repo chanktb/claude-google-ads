@@ -56,6 +56,39 @@ def brand_tokens(context_path):
         return []
 
 
+def carried_lists(context_path):
+    """Carried (resold) brands + which already have a dedicated campaign, for the reseller guard.
+    Returns (carried_phrases, own_campaign_set). A negative that blocks a brand you SELL is a false-positive:
+    if the brand has no dedicated campaign the catch-all is its only home (never block); if it does, blocking
+    is allowed only to ROUTE to the specialist campaign."""
+    if not context_path or not yaml:
+        return [], set()
+    try:
+        with open(context_path, encoding="utf-8") as f:
+            ctx = yaml.safe_load(f) or {}
+    except FileNotFoundError:
+        return [], set()
+    br = ctx.get("brand") or {}
+    raw = br.get("carried_brands") or br.get("brands_carried") or ctx.get("carried_brands") or []
+    own = br.get("brands_with_own_campaign") or ctx.get("brands_with_own_campaign") or []
+    norm = lambda xs: sorted({re.sub(r"\s+", " ", str(x).lower().strip()) for x in xs if len(str(x).strip()) >= 2})
+    return norm(raw), set(norm(own))
+
+
+def check_carried(a, name, carried, own_camp):
+    if not carried:
+        return
+    for n in a.get("negatives") or []:
+        for h in hits_brand(n.get("text", ""), carried):
+            if h in own_camp:
+                warn(f"{name}: negative '{n.get('text')}' blocks CARRIED brand '{h}' — allowed ONLY to route to "
+                     f"the dedicated {h} campaign; confirm it targets the catch-all, not the {h} campaign itself.")
+            else:
+                err(f"{name}: negative '{n.get('text')}' blocks CARRIED brand '{h}' which has NO dedicated "
+                    f"campaign — NEVER block a brand you sell (the catch-all is its only home). Split it into its "
+                    f"own campaign when it scales, or fix stock/PDP/feed; do not negate it.")
+
+
 def hits_brand(text, phrases):
     """Word-boundary phrase match (NOT substring) — own 'nd' must not match resold 'dnd';
     'nd nail supply' matches the whole phrase, not the generic word 'nail' on its own."""
@@ -154,6 +187,7 @@ def main():
         err("account.customer_id missing")
 
     toks = brand_tokens(args.context)
+    carried, own_camp = carried_lists(args.context)
     if args.max_budget is None:
         warn("no --max-budget cap passed — spend-cap guard not enforced")
 
@@ -182,6 +216,7 @@ def main():
         if t == "add_negatives":
             check_negatives(a, name)
             check_brand(a, name, toks)
+            check_carried(a, name, carried, own_camp)
         elif t == "adjust_budget":
             check_budget(a, name, tgt, args.max_budget, args.budget_step)
             check_scale_gates(a, name, tgt)

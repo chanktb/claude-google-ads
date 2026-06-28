@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Optimizer no longer recommends negating brands the store SELLS (a sales-killing false-positive).** For a
+  reseller, a search term for a carried brand (e.g. Kupa, Chaun Legend, Kiara Sky on ND) is buying intent, not a
+  competitor — and a carried brand sits in a catch-all campaign because it hasn't been split into its own
+  campaign YET, not because it's a rival. The search-term miner now classifies brand terms three ways instead of
+  two: (1) own brand → never block; (2) **carried brand** — *with* a dedicated campaign → block in the catch-all
+  ONLY to route to the specialist campaign; *without* one → **never block** (the catch-all is its only home;
+  it's a stock/PDP/feed fix or a split-into-own-campaign candidate); (3) not carried → a competitor *candidate*
+  flagged for confirmation, never auto-proposed. Added `carried_brands` + `brands_with_own_campaign` to the
+  context template + setup (derive from the catalog/feed `brand` and campaign names). The change-set validator
+  now BLOCKS a negative that targets a carried brand with no dedicated campaign (defense-in-depth). Also fixed a
+  stale playbook line claiming PMax can't do hour/day bid adjustments (it can, since 2024) and stopped treating
+  bare "free" as piracy-intent (it's a product attribute — "HEMA-free", "TPO-free").
+
 ### Added
 
 - **Competitive intelligence: impression share + Auction-Insights competitor domains.** The account overview's

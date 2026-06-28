@@ -54,8 +54,31 @@ accounts need the insight or you'll miss most of the spend. Find top spend, top 
 negatives in themed lists; respect the "what NOT to block" rules (store / coupon / cheap-brand) in the
 playbook; **never block brand terms** (brand intent, even at 0 conv). Catch cross-brand leakage via
 `brand_terms`.
-Runnable: `python ${CLAUDE_PLUGIN_ROOT}/skills/optimizer/scripts/search_term_miner.py terms.json` → wasted spend + categorized,
-ready-to-copy wrapped negatives, with protected terms held back for review.
+
+### 🛑 RESELLER BRAND RULE — never negate a brand the store SELLS (the #1 false-positive)
+For a distributor/reseller, a search term containing a **brand you carry** is **buying intent, not a
+competitor** — auto-negating it kills your own sales. Classify every brand-bearing term into THREE buckets,
+not two:
+1. **OWN house brand** → never block (brand defense). [`brand_terms`]
+2. **CARRIED brand** (a brand in your catalog/feed) — split by whether it already has its own campaign:
+   - **has a dedicated campaign** → blocking it in a catch-all (e.g. "Lite") is OK *only to ROUTE* traffic to
+     the specialist campaign (anti-cannibalization). Label it "route to <brand> campaign", NOT "competitor".
+   - **no dedicated campaign** → **NEVER block.** The catch-all is its ONLY home — it lives there *because it
+     hasn't been split out yet, not because it's a competitor.* A 0-conv carried-brand term is a stock/PDP/feed
+     problem OR a **split-into-its-own-campaign candidate** once volume justifies it. Recommend the split, never
+     a negative.
+3. **NOT carried** (store genuinely doesn't sell it) → a *candidate* competitor negative — flag for the user to
+   CONFIRM it isn't carried before blocking. Never assert "competitor" on your own.
+**Populate the miner's brand inputs every run** (don't run it blind): `carried_brands` = the distinct `brand`
+values from the store catalog / the Shopping feed (`shopping_performance_view` product brand, or the D14
+inventory join) ∪ any `brands_carried` in `account-context.yaml`; `brands_with_own_campaign` = brands that map
+to an existing dedicated campaign (derive from the active-campaign names, e.g. "ND pMax OPI" → `opi`). Without
+these, the miner will mislabel carried brands (Kupa/Chaun Legend/Kiara Sky on ND) as competitors — exactly the
+bug to avoid.
+Runnable: `python ${CLAUDE_PLUGIN_ROOT}/skills/optimizer/scripts/search_term_miner.py terms.json`
+(input keys: `brand_terms`, `carried_brands`, `brands_with_own_campaign`, `min_spend`, `terms`) → wasted spend +
+categorized, ready-to-copy wrapped negatives, with carried-brand / routing / competitor-candidate buckets kept
+separate and carried-brand-without-a-campaign held back from blocking.
 
 ## STEP 4 — Asset groups / creative
 Flag asset groups with ROAS below the tier target and meaningful spend, POOR ad strength (ENABLED + has

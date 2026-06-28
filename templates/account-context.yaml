@@ -78,7 +78,14 @@ measurement:
 
 brand:
   brand_terms: []          # ["acme", "acme nail"] — branded-search targeting + PMax brand exclusion
-  competitor_terms: []     # brands NOT sold on the site -> negative keyword candidates
+  carried_brands: []       # brands the store RESELLS (from catalog/feed `brand`) — NEVER negate these:
+                           #   a search for a brand you sell is buying intent, not a competitor. The optimizer's
+                           #   search-term miner + the change-set validator both read this to avoid blocking
+                           #   your own sales. (For a reseller this list is often long: ["opi","dnd","kupa",...])
+  brands_with_own_campaign: []  # carried brands that already have a DEDICATED campaign (e.g. ["opi","dnd"]).
+                           #   Only these may be blocked in a catch-all campaign — to ROUTE to the specialist
+                           #   campaign. A carried brand NOT in this list has no home but the catch-all → never block.
+  competitor_terms: []     # brands NOT sold on the site -> negative keyword candidates (confirm before blocking)
   trademark_notes: ""
 
 campaign_defaults:

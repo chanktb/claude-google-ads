@@ -131,6 +131,13 @@ defaults from `${CLAUDE_PLUGIN_ROOT}/references/vertical-defaults.md` based on t
    capture `{name, gross_margin, min_roas}`. Look in Google Ads (campaign/label structure) for hints,
    then ask the user to confirm the numbers. This lets audit/optimizer avoid false "low ROAS" flags.
 3. **Brand**: `brand_terms` (own brand + variants).
+   **`carried_brands` (CRITICAL for resellers) — the brands the store SELLS.** Derive from the catalog: the
+   distinct `vendor`/`brand` values in the store (Shopify `product.vendor`, the Shopping feed `brand`, or product
+   types). This is the single most important guard against the optimizer negating your own sales — a search for a
+   brand you carry is buying intent, NOT a competitor. Also capture `brands_with_own_campaign` (carried brands that
+   already map to a dedicated campaign — derive from the active campaign names, e.g. "ND pMax OPI" → `opi`); only
+   those may be blocked in a catch-all (to route). A carried brand NOT yet split into its own campaign lives in the
+   catch-all by design — never propose blocking it.
    **`competitor_terms` — research the business FIRST, then supplement.** Don't suggest from negatives
    alone (too narrow) or generically (useless). Procedure:
    (a) **Understand the business** — what it sells, niche, market/geo, positioning (from the store, site,

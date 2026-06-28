@@ -68,6 +68,14 @@ live in `campaign_search_term_insight` (query per campaign_id). A PMax-heavy acc
   own brand "AB" sitting inside resold "FAB"/"CAB") — substring-matching mislabels product-category searches as
   brand and corrupts both the never-block list and the brand-cannibalization %. Exclude known resold
   product-brand names first.
+- **CARRIED brands — brands the store RESELLS (the #1 false-positive for distributors).** A search for a brand
+  you stock is BUYING INTENT, never a "competitor". Three buckets, not two: (a) carried brand **with its own
+  campaign** → block in a catch-all ONLY to *route* to the specialist campaign (anti-cannibalization), label it
+  "route", not "competitor"; (b) carried brand **without a dedicated campaign** → **NEVER block** — the catch-all
+  is its only home (it's there because it isn't split out yet); a 0-conv carried-brand term is a stock/PDP/feed
+  fix or a SPLIT-into-own-campaign candidate, not a negative; (c) **not carried** → a competitor *candidate*,
+  confirm the store doesn't sell it before blocking. Build the carried-brand list from the catalog/feed `brand`
+  values, and the "has own campaign" set from existing campaign names.
 - "store" alone (e.g. "<category> supply store" can convert very well) — only block "store near me" intent.
 - "coupon / discount code / promo code" — high-intent bottom-funnel; often strong ROAS. Only block if the
   term lacks brand intent AND has 0 conversions.
@@ -75,8 +83,9 @@ live in `campaign_search_term_insight` (query per campaign_id). A PMax-heavy acc
   stores); check CTR + CVR before blocking, don't assume "cheap" = junk.
 
 ## PMax bidding & scheduling caveats
-PMax does not support direct hour/day bid adjustments (only Search does). For PMax, use budget pacing or
-campaign-level scheduling, or just let it optimize time-of-day with its built-in signals.
+PMax **does** support location AND ad-schedule bid adjustments (campaign-criterion `bid_modifier`, since 2024) —
+it is NOT exclusion-only. Use ad-schedule bid modifiers for dayparting and location bid modifiers for geo on PMax
+just as on Search. (What PMax does not expose is keyword-level bidding.)
 
 ## Conversion-volume floor
 A campaign/asset group/ad group wants ~15-30 conversions/period to let Smart Bidding learn. Below ~10,
