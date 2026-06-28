@@ -141,6 +141,20 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      `campaign_criterion` WHERE `type='CONTENT_LABEL'` (`content_label.type`) — **this READS; an empty result =
      none configured, NOT unreadable** (do not punt it to UI). bundle key `content_labels:[{campaign_id,content_label_type}]`.
      (Exact queries: `references/gaql-notes.md`.)
+   - **competitive pressure — impression share (PUBLIC, always pull)** (D-competitive): per active campaign pull
+     `metrics.search_impression_share`, `metrics.search_rank_lost_impression_share`,
+     `metrics.search_budget_lost_impression_share` (+ abs-top) with a date range. rank-lost IS = losing the
+     auction to COMPETITORS on Ad Rank; budget-lost IS = losing to budget (a scaling lever). Put on each
+     `active_campaigns` row. These are public metrics — never punt to UI.
+   - **competitor DOMAINS — Auction Insights (try, then degrade)** (competitor input): the "phiên đấu giá"
+     competitor list IS in the API — `segments.auction_insight_domain` + `metrics.auction_insight_search_*`
+     (impression_share / overlap_rate / outranking_share / position_above_rate / top & abs-top %). **BUT these
+     are RESTRICTED "not publicly available" metrics → most dev tokens get `METRIC_ACCESS_DENIED` unless Google
+     allowlisted the token.** So: TRY the pull; on success write bundle key `auction_insights:[{domain,
+     impression_share,overlap_rate,outranking_share,position_above_rate}]` (the report renders a Competitors card
+     and you MERGE the domains into the setup competitor list). On `METRIC_ACCESS_DENIED`, do NOT call it an API
+     gap — note "Auction Insights metrics not allowlisted on this token" and fall back to the impression-share
+     signal above + the competitors the user gave at setup. (Set `meta.own_domain` so your own row is tagged.)
    - **⚠️ "verify in UI" is ONLY these confirmed-blocked fields** (every variant tested 2026-06-28) — do NOT
      mark anything else UI-only: Final URL Expansion toggle (`url_expansion_opt_out` UNRECOGNIZED), asset
      automation (`asset_automation_settings` PROHIBITED/RepeatedComposite), the **video brand-safety inventory

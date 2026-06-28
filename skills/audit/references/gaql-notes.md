@@ -86,6 +86,24 @@ These were once mislabeled "verify in UI" but DO read via GAQL — pull them, do
   `content_labels:[{campaign_id,content_label_type}]`. (The OLD note claiming `customer.content_label_exclusions`
   is UNRECOGNIZED was wrong-method: that field name doesn't exist; the data lives on `campaign_criterion`.)
 
+- **Competitive pressure — impression share (PUBLIC; pull always)** — per campaign:
+  `metrics.search_impression_share`, `metrics.search_absolute_top_impression_share`,
+  `metrics.search_rank_lost_impression_share`, `metrics.search_budget_lost_impression_share` (values 0..1).
+  rank-lost IS = the auction went to a COMPETITOR with higher Ad Rank; budget-lost IS = you ran out of budget.
+  Verified live on ND (e.g. pMax Lite IS 19.9% / rank-lost 71.5% / budget-lost 8.6%). No allowlist needed.
+- **Competitor DOMAINS — Auction Insights ("phiên đấu giá")** — the competitor list IS in the API (NOT a gap):
+  segment `segments.auction_insight_domain` ("Domain (visible URL) of a participant in the Auction Insights
+  report") + metrics `metrics.auction_insight_search_impression_share`, `_overlap_rate`, `_outranking_share`,
+  `_position_above_rate`, `_top_impression_percentage`, `_absolute_top_impression_percentage`. Queryable from
+  `campaign` (segment by domain). **⚠️ These six are RESTRICTED — the proto marks each "This metric is not
+  publicly available", so a standard dev token returns `METRIC_ACCESS_DENIED` (NOT `UNRECOGNIZED` — the fields
+  EXIST; access is gated).** Verified live on ND: `segments.auction_insight_domain` + the metrics are recognized
+  and return `METRIC_ACCESS_DENIED` on this MCP's token. To unlock: the developer token must be allowlisted by
+  Google for auction-insight metrics (apply via the API Center / your token's access level) — it is NOT an
+  account-side setting. Pipeline rule: TRY it; on success write `auction_insights` and merge domains into the
+  competitor list; on denial, degrade to the impression-share signal + setup-provided competitors. NEVER report
+  this as "API can't do it" — say "metrics not allowlisted on this token".
+
 **Genuinely NOT readable on this MCP/API version (confirmed, every variant tried — record as verify-in-UI):**
 `campaign.url_expansion_opt_out` / `final_url_expansion_opt_out` (FUE toggle) → UNRECOGNIZED;
 `campaign.asset_automation_settings` → RepeatedComposite/PROHIBITED, `automatically_created_assets_setting` →

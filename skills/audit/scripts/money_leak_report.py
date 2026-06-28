@@ -21,7 +21,14 @@ BUNDLE SCHEMA (bundle.json) — every section optional; report degrades graceful
   "meta": {"account_name","customer_id","window_start","window_end"},
   "active_campaigns": [{"id","name","channel_type","budget_micros","target_roas","bidding_strategy_type",
       "system_status","primary_status","brand_guidelines_enabled","geo_target_type",  # 5=PRES_OR_INTEREST,6=SEARCH_INTEREST,7=PRESENCE
+      "search_impression_share","search_rank_lost_impression_share","search_budget_lost_impression_share",  # PUBLIC IS metrics (0..1)
       "cost_micros","conversions","conversions_value","impressions","clicks"}],
+  "auction_insights":[{"domain","impression_share","overlap_rate","outranking_share","position_above_rate"}],
+                                                                            #   RESTRICTED metrics (segments.auction_insight_domain +
+                                                                            #   metrics.auction_insight_search_*): "not publicly available" →
+                                                                            #   METRIC_ACCESS_DENIED unless the dev token is allowlisted. Omit
+                                                                            #   the key on denial; the report degrades to setup competitors.
+                                                                            #   meta.own_domain marks your own row "YOU".
   "enhanced_conversions": true,   # customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled (bool)
   "channel":   [{"campaign_id","ad_network_type","cost_micros","conversions","conversions_value","clicks"}],
   "device":    [{"campaign_id","device","cost_micros","conversions","conversions_value","clicks"}],
@@ -477,6 +484,48 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
     H.append("".join(arows) or '<div class="row"><span class="muted">No account-level items.</span></div>')
     H.append('</div></div>')
 
+    # ---------- Competitors (Auction Insights) ----------
+    # Restricted "not publicly available" metrics — present ONLY if the dev token was allowlisted and the pull
+    # succeeded (else METRIC_ACCESS_DENIED and the bundle omits this; we degrade to setup competitors silently).
+    ai = b.get("auction_insights") or []
+    if ai:
+        def _g(r2,*ks):
+            for k in ks:
+                v=r2.get(k)
+                if v not in (None,""):
+                    try: return float(v)
+                    except Exception: pass
+            return 0.0
+        agg={}
+        for r2 in ai:
+            dom=str(r2.get("domain") or r2.get("auction_insight_domain") or "").strip()
+            if not dom: continue
+            m=agg.setdefault(dom,{"is":0.0,"ov":0.0,"or":0.0,"pa":0.0})
+            m["is"]=max(m["is"],_g(r2,"impression_share","auction_insight_search_impression_share"))
+            m["ov"]=max(m["ov"],_g(r2,"overlap_rate","auction_insight_search_overlap_rate"))
+            m["or"]=max(m["or"],_g(r2,"outranking_share","auction_insight_search_outranking_share"))
+            m["pa"]=max(m["pa"],_g(r2,"position_above_rate","auction_insight_search_position_above_rate"))
+        own=str(meta.get("own_domain","") or "").lower()
+        rows=[]
+        for dom,m in sorted(agg.items(),key=lambda x:-x[1]["is"]):
+            tag=' <span style="font-size:10.5px;font-weight:700;background:#0f172a;color:#fff;border-radius:999px;padding:2px 8px">YOU</span>' if (own and own in dom.lower()) else ''
+            rows.append(f'<tr><td style="padding:8px 10px;border-top:1px solid #eef1f5"><b>{esc(dom)}</b>{tag}</td>'
+                        f'<td style="padding:8px 10px;border-top:1px solid #eef1f5;text-align:right">{m["is"]*100:.0f}%</td>'
+                        f'<td style="padding:8px 10px;border-top:1px solid #eef1f5;text-align:right">{m["ov"]*100:.0f}%</td>'
+                        f'<td style="padding:8px 10px;border-top:1px solid #eef1f5;text-align:right">{m["pa"]*100:.0f}%</td>'
+                        f'<td style="padding:8px 10px;border-top:1px solid #eef1f5;text-align:right">{m["or"]*100:.0f}%</td></tr>')
+        if rows:
+            H.append('<h2 class="t">Competitors — Auction Insights</h2>')
+            H.append('<div class="card"><div style="padding:6px 8px 12px">'
+                     '<table style="width:100%;border-collapse:collapse;font-size:13px">'
+                     '<thead><tr style="text-align:left;color:#64748b;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em">'
+                     '<th style="padding:6px 10px">Domain (auction participant)</th><th style="padding:6px 10px;text-align:right">Impr. share</th>'
+                     '<th style="padding:6px 10px;text-align:right">Overlap</th><th style="padding:6px 10px;text-align:right">Pos. above you</th>'
+                     '<th style="padding:6px 10px;text-align:right">You outrank</th></tr></thead><tbody>'
+                     + "".join(rows) + '</tbody></table>'
+                     '<div style="font-size:12px;color:#475569;padding:8px 10px 2px">These domains share your auctions — merge into the competitor list (setup) for branded-search conquesting + gap analysis.</div>'
+                     '</div></div>')
+
     # ---------- PER-CAMPAIGN visual blocks ----------
     H.append('<h2 class="t">Per-campaign deep-dives</h2>')
     for c in sorted(camps,key=lambda x:-d(x.get("cost_micros"))):
@@ -640,6 +689,33 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
             srows2.append(vrow("FIX","Location targeting",f"{lbl} — serves users merely interested in the geo",cnt,action="Switch to Presence-only (People in your targeted locations) to cut interest-based waste."))
         elif gt in GEO_POS_GOOD:
             srows2.append(vrow("GOOD","Location targeting","Presence-only (people physically in the geo)",cnt))
+        # Impression share & competitive pressure (PUBLIC metrics — always pullable, no allowlist needed).
+        # rank-lost IS = losing the auction to competitors on Ad Rank; budget-lost IS = losing to budget.
+        def _is(*keys):
+            for k in keys:
+                v=c.get(k)
+                if v not in (None,""):
+                    try: return float(v)
+                    except Exception: pass
+            return None
+        sis=_is("search_impression_share","search_is","impression_share")
+        rlost=_is("search_rank_lost_impression_share","search_rank_lost_is","rank_lost_is")
+        blost=_is("search_budget_lost_impression_share","search_budget_lost_is","budget_lost_is")
+        if any(v is not None for v in (sis,rlost,blost)):
+            parts=[]
+            if sis is not None: parts.append(f"IS {sis*100:.0f}%")
+            if rlost is not None: parts.append(f"rank-lost {rlost*100:.0f}%")
+            if blost is not None: parts.append(f"budget-lost {blost*100:.0f}%")
+            desc=" · ".join(parts)
+            if rlost is not None and rlost>=0.40 and rlost>=(blost or 0):
+                extra=f" (+ {blost*100:.0f}% budget-capped)" if (blost is not None and blost>=0.05) else ""
+                srows2.append(vrow("WATCH","Impression share",f"{desc} — competitors outranking you on Ad Rank",cnt,action=f"High rank-lost IS = losing the auction to competitors{extra}. Lift bid/tROAS headroom or Ad Rank (quality/assets); see the Auction-Insights competitors card."))
+            elif blost is not None and blost>=0.05:
+                srows2.append(vrow("WATCH","Impression share",f"{desc} — budget-capped",cnt,action="Budget is throttling reach — if ROAS is at/above target, raise budget per the Scaling Ladder."))
+            elif sis is not None and sis>=0.7:
+                srows2.append(vrow("GOOD","Impression share",f"{desc} — dominant share of the auction",cnt))
+            else:
+                srows2.append(vrow("WATCH","Impression share",desc,cnt))
         # Enhanced Conversions READS at customer level (set once on the bundle meta).
         ec=(b.get("measurement") or {}).get("enhanced_conversions") if isinstance(b.get("measurement"),dict) else b.get("enhanced_conversions")
         if ec is True: srows2.append(vrow("GOOD","Enhanced Conversions","enabled (customer.conversion_tracking_setting)",cnt))

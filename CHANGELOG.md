@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Competitive intelligence: impression share + Auction-Insights competitor domains.** The account overview's
+  "auction insights" (the rivals you share auctions with) is now an audit input. Two layers: (1) **impression
+  share** — `metrics.search_impression_share` / `_rank_lost_` / `_budget_lost_` per campaign (PUBLIC, always
+  pulled) renders a competitive-pressure row: high rank-lost IS = competitors outranking you on Ad Rank,
+  budget-lost IS = a budget lever (verified live on ND: pMax Lite IS 19.9% / rank-lost 71.5%). (2) **competitor
+  DOMAINS** — `segments.auction_insight_domain` + `metrics.auction_insight_search_*` DO exist in the API (not a
+  gap), rendered as a "Competitors — Auction Insights" card (domain · impr-share · overlap · pos-above · you
+  outrank, your own domain tagged) and merged into the setup competitor list. These six metrics are RESTRICTED
+  ("not publicly available" in the proto) so a non-allowlisted dev token returns `METRIC_ACCESS_DENIED` — the
+  pipeline tries, and on denial degrades to the impression-share signal + setup competitors rather than calling
+  it an API gap. SKILL manifest + gaql-notes + setup document the exact fields, the access reality, and how to
+  request allowlisting.
+
 ### Changed
 
 - **One audit = one HTML report.** The audit used to ship two files — `AUDIT.html` (the real merged

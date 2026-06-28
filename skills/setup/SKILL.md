@@ -138,7 +138,11 @@ defaults from `${CLAUDE_PLUGIN_ROOT}/references/vertical-defaults.md` based on t
    (b) **Research real competitors** in that niche (web search for "<niche> + competitors / alternatives /
        vs", top retailers in the category and region). Produce a genuine shortlist of named rivals.
    (c) **Supplement from account data** — brand-like negatives (`campaign_criterion` where
-       `negative = true`) and auction-insights domains, as additional candidates.
+       `negative = true`) and **Auction-Insights competitor domains** (`segments.auction_insight_domain` —
+       a real, high-signal source of who you actually share auctions with). Try to pull it; these are RESTRICTED
+       "not publicly available" metrics, so a non-allowlisted dev token returns `METRIC_ACCESS_DENIED` — if so,
+       fall back to research + negatives (it's a token access gap, not an API gap). When the audit DOES pull it
+       (bundle `auction_insights`), merge those domains into `competitor_terms`. See `audit/references/gaql-notes.md`.
    (d) **Propose, then confirm/prune.** Beware: a negative may exist only to route traffic between the
        account's own campaigns (a brand it DOES sell), not a true competitor — confirm, never auto-add.
 4. **Campaign defaults**: **derive the budget context** — list existing active campaign budgets
