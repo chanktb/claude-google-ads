@@ -63,9 +63,12 @@ returns impressions ONLY (no cost/conv).
 
 ## Settings & measurement fields — what READS vs what is genuinely UI/tag-side (empirically verified 2026-06-28)
 These were once mislabeled "verify in UI" but DO read via GAQL — pull them, don't punt:
-- **Location targeting type (Presence vs Interest)** — `campaign.geo_target_type_setting.positive_geo_target_type`
-  (7 = PRESENCE_OR_INTEREST, 5 = PRESENCE) + `.negative_geo_target_type`. Positive = PRESENCE_OR_INTEREST is a
-  real leak finding (serves users merely *interested* in the geo) → recommend Presence-only.
+- **Location targeting type (Presence vs Interest)** — `campaign.geo_target_type_setting.positive_geo_target_type`.
+  **Official enum (v21 proto, verified live): `5 = PRESENCE_OR_INTEREST`, `6 = SEARCH_INTEREST`, `7 = PRESENCE`.**
+  ⚠️ Do NOT invert this — `7` is the CORRECT/good value (people physically in the geo); `5` and `6` are the leaks
+  (serves users merely *interested* in the geo) → recommend Presence-only. A 2026-06-28 bug labeled `7` as the leak
+  and produced a false "switch to Presence" finding on accounts that were already on Presence. (`.negative_geo_target_type`
+  uses a DIFFERENT enum: 4 = PRESENCE_OR_INTEREST, 5 = PRESENCE — don't reuse the positive mapping for it.)
 - **Enhanced Conversions** — `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled` +
   `.accepted_customer_data_terms` (customer-level is authoritative; conversion_action-level EC fails as a
   RepeatedComposite — don't use it).

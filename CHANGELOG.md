@@ -53,6 +53,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Fixed an INVERTED location-targeting enum that produced a false "switch to Presence" finding.** The
+  generator mapped `positive_geo_target_type = 7` to PRESENCE_OR_INTEREST (a leak) — but the official v21 enum
+  is `5 = PRESENCE_OR_INTEREST`, `6 = SEARCH_INTEREST`, **`7 = PRESENCE`** (the correct, recommended setting).
+  So accounts already on Presence-only (the right config) were wrongly flagged "Presence-OR-Interest — switch to
+  Presence". Verified live + against the proto. Now `5`/`6` flag the leak (with the right label), `7` reads GOOD,
+  and the SKILL / gaql-notes / diagnostic-playbook all carry the corrected mapping (+ a note that the *negative*
+  geo enum is different: 4/5). Surfaced by an independent ND audit that returned 7 for all campaigns.
+- **Geo card now resolves state names even when a one-shot pull forgets to.** Region ids were shipping as raw
+  numbers (21147, 21176, …) when the dispatched pull skipped `geo_target_constant` resolution. The generator now
+  embeds the stable US-state geo-id table as a fallback (bundle `geo_names` still overrides it for cities /
+  regions / other countries), and any id it still can't resolve renders as `Region <id>` — never a bare number
+  masquerading as a place. Also corrected the diagnostic-playbook line that claimed PMax can't bid by geo (it can:
+  location bid adjustments are supported on PMax).
 - **Empirically eliminated false "verify in UI" labels.** Tested every blocked field against the live API:
   **location targeting type** (`campaign.geo_target_type_setting` — Presence vs Interest), **Enhanced
   Conversions** (`customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled`), **final URLs**

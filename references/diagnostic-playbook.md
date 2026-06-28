@@ -111,8 +111,8 @@ achieved ≥ target → target ceiling; spend ≪ budget with low IS and few imp
 | Diagnosis | Threshold | Fix |
 |-----------|-----------|-----|
 | **Geo spends, never buys** | a region with cost > ~2–3× target CPA AND 0 conversions | add a **location exclusion** for that region |
-| **Weak geo ROAS** | region ROAS < ~50% of blended, sustained, with material cost | location **bid −%** (Search) or exclude (PMax can't bid by geo → exclude) |
-| **"Presence or Interest" leak** | `positive_geo_target_type = PRESENCE_AND_INTEREST` (serves people merely *interested* in the area) OR meaningful `location_type=2` (AREA_OF_INTEREST) spend | switch targeting to **PRESENCE** ("people in your targeted locations") |
+| **Weak geo ROAS** | region ROAS < ~50% of blended, sustained, with material cost | location **bid −%** (supported on Search AND PMax) or exclude |
+| **"Presence or Interest" leak** | `positive_geo_target_type` = `PRESENCE_OR_INTEREST` (enum **5**) or `SEARCH_INTEREST` (enum **6**) — serves people merely *interested* in the area — OR meaningful `location_type=2` (AREA_OF_INTEREST) spend. **NOTE: enum 7 = PRESENCE = the correct setting, NOT a leak.** | switch targeting to **PRESENCE** ("people in your targeted locations") |
 | **Serving where you don't ship** | spend in regions/countries outside the fulfillment area | exclude those locations |
 
 **Confidence:** roll small states up; a state with 30 clicks / 0 conv is Investigate, not Cut. Need ≥100 impr

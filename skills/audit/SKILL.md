@@ -123,8 +123,9 @@ rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that ha
      `asset.price_asset.*`) or the `asset` resource by id. bundle key `ext_text:[{campaign_id,field_type,text}]`.
    - **conversion lag** (D12): `segments.conversion_lag_bucket` — the "can I trust short-window ROAS?" gate.
    - **settings & measurement that DO read** (pull these — they were once wrongly punted to UI): **location type**
-     `campaign.geo_target_type_setting.positive_geo_target_type` (7=PRESENCE_OR_INTEREST is a leak → recommend
-     Presence-only); **Enhanced Conversions** `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled`
+     `campaign.geo_target_type_setting.positive_geo_target_type` — **official enum: 5=PRESENCE_OR_INTEREST,
+     6=SEARCH_INTEREST (both leaks → recommend Presence-only), 7=PRESENCE (correct, NOT a leak)**. Do NOT invert
+     this: 7 is the GOOD value. (Verified live + against the v21 proto 2026-06-28.) **Enhanced Conversions** `customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled`
      + `.accepted_customer_data_terms`; **final URLs** via `landing_page_view` / `expanded_landing_page_view`;
      **RSA text + per-asset metrics** via `ad_group_ad_asset_view`; **placement exclusions** via
      `campaign_criterion.placement.url`. (Exact queries: `references/gaql-notes.md`.)

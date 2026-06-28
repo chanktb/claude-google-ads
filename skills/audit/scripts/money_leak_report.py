@@ -20,7 +20,7 @@ BUNDLE SCHEMA (bundle.json) — every section optional; report degrades graceful
 {
   "meta": {"account_name","customer_id","window_start","window_end"},
   "active_campaigns": [{"id","name","channel_type","budget_micros","target_roas","bidding_strategy_type",
-      "system_status","primary_status","brand_guidelines_enabled","geo_target_type",  # 7=PRESENCE_OR_INTEREST,5=PRESENCE
+      "system_status","primary_status","brand_guidelines_enabled","geo_target_type",  # 5=PRES_OR_INTEREST,6=SEARCH_INTEREST,7=PRESENCE
       "cost_micros","conversions","conversions_value","impressions","clicks"}],
   "enhanced_conversions": true,   # customer.conversion_tracking_setting.enhanced_conversions_for_leads_enabled (bool)
   "channel":   [{"campaign_id","ad_network_type","cost_micros","conversions","conversions_value","clicks"}],
@@ -66,6 +66,26 @@ CT  = {2:"SEARCH",3:"DISPLAY",4:"SHOPPING",6:"VIDEO",7:"MULTI_CHANNEL",8:"LOCAL"
 CLAG= {2:"<1d",3:"1-2d",4:"2-3d",5:"3-4d",6:"4-5d",7:"5-6d",8:"6-7d",9:"7-8d",10:"8-9d",11:"9-10d",16:"14-21d",17:"21-30d"}
 CER = {2:"Ad",3:"AdGroup",4:"AdGroupCriterion",5:"Campaign",6:"CampaignBudget",7:"AdGroupBidModifier",8:"CampaignCriterion",13:"AdGroupAd",16:"CampaignAsset",21:"AssetGroup",22:"AssetGroupAsset",23:"ListingGroupFilter",24:"AssetGroupSignal"}
 DOW = {2:"Mon",3:"Tue",4:"Wed",5:"Thu",6:"Fri",7:"Sat",8:"Sun"}
+# PositiveGeoTargetType — official Google Ads API proto (v21, verified): 5=PRESENCE_OR_INTEREST (leak —
+# serves users merely *interested* in the geo), 6=SEARCH_INTEREST (leak), 7=PRESENCE (correct — people
+# physically in the geo). NOTE: do NOT confuse with the negative_geo_target_type enum (4/5).
+GEO_POS = {5:"PRESENCE_OR_INTEREST",6:"SEARCH_INTEREST",7:"PRESENCE"}
+GEO_POS_LEAK = {5,6,"5","6","PRESENCE_OR_INTEREST","SEARCH_INTEREST"}
+GEO_POS_GOOD = {7,"7","PRESENCE"}
+# US state + DC geo_target_constant ids (stable; pulled live 2026-06-28). Fallback so the geo card never ships
+# a raw numeric id even if the bundle's geo_names is incomplete. Bundle geo_names ALWAYS takes precedence
+# (covers cities/regions/other countries this table can't). City/region ids still rely on the bundle.
+US_STATE_GEO = {
+ "21132":"Alaska","21133":"Alabama","21135":"Arkansas","21136":"Arizona","21137":"California","21138":"Colorado",
+ "21139":"Connecticut","21140":"District of Columbia","21141":"Delaware","21142":"Florida","21143":"Georgia",
+ "21144":"Hawaii","21145":"Iowa","21146":"Idaho","21147":"Illinois","21148":"Indiana","21149":"Kansas",
+ "21150":"Kentucky","21151":"Louisiana","21152":"Massachusetts","21153":"Maryland","21154":"Maine",
+ "21155":"Michigan","21156":"Minnesota","21157":"Missouri","21158":"Mississippi","21159":"Montana",
+ "21160":"North Carolina","21161":"North Dakota","21162":"Nebraska","21163":"New Hampshire","21164":"New Jersey",
+ "21165":"New Mexico","21166":"Nevada","21167":"New York","21168":"Ohio","21169":"Oklahoma","21170":"Oregon",
+ "21171":"Pennsylvania","21172":"Rhode Island","21173":"South Carolina","21174":"South Dakota","21175":"Tennessee",
+ "21176":"Texas","21177":"Utah","21178":"Virginia","21179":"Vermont","21180":"Washington","21182":"Wisconsin",
+ "21183":"West Virginia","21184":"Wyoming"}
 GRADE_C={"A":"#1e8e5a","B":"#2563eb","C":"#c8860a","D":"#d9622b","F":"#c0392b"}
 SEVC={"Critical":"#b91c1c","High":"#dc2626","Medium":"#d97706","Investigate":"#d97706","Low":"#16a34a","Opportunity":"#2563eb","PASS":"#16a34a","WARNING":"#d97706","FAIL":"#dc2626"}
 COOLDOWN_DAYS=14
@@ -170,7 +190,14 @@ def main():
     asset_c=bycamp("assets"); desc_c=bycamp("descriptions"); ext_c=bycamp("extensions"); exttx_c=bycamp("ext_text")
     neg_c=bycamp("negatives"); furl_c=bycamp("final_urls"); sig_c=bycamp("signals"); prod_c=bycamp("products")
     sch_c=bycamp("schedule")
-    geo_names=b.get("geo_names",{})
+    # Embedded US-state table fills any id the bundle didn't resolve; bundle geo_names overrides it.
+    geo_names={**US_STATE_GEO,**{str(k):v for k,v in (b.get("geo_names") or {}).items()}}
+    def gname(rid):
+        # Never present a bare numeric id as a place name. Resolve, else label it "Region <id>".
+        nm=geo_names.get(str(rid)) or geo_names.get(rid)
+        if nm: return str(nm).split(",")[0]
+        s=str(rid)
+        return f"Region {s}" if s.isdigit() else s
     merch=b.get("merchant") or {}
     # `pulled` manifest: the bundle declares which dimensions were FULLY pulled (all campaigns). A dimension
     # not listed = NOT pulled → render VERIFY, never a confident finding. This stops a truncated/partial pull
@@ -240,7 +267,7 @@ def main():
         weakg=[]
         for rid,(co,cv,vl,ck) in sorted(greg.items(),key=lambda x:-x[1][0]):
             if co<GEO_MIN: continue
-            nm=geo_names.get(str(rid),geo_names.get(rid,str(rid)))
+            nm=gname(rid)
             rr=roas(vl,co)
             if cv==0: weakg.append((nm,co,0.0,co,True))
             elif rr<WEAK*blended and blended: weakg.append((nm,co,rr,co*(1-rr/blended),False))
@@ -488,7 +515,7 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         greg=defaultdict(lambda:[0.0,0.0,0.0])
         for r2 in geo_c.get(cid,[]):
             rid=r2.get("geo_region_id"); greg[rid][0]+=d(r2.get("cost_micros")); greg[rid][1]+=float(r2.get("conversions",0) or 0); greg[rid][2]+=float(r2.get("conversions_value",0) or 0)
-        def _gname(rid): return (geo_names.get(str(rid),geo_names.get(rid,str(rid))) or "").split(",")[0]
+        _gname=gname
         # Two ACTIONABLE lists, not a flat "top spend": WINNERS to keep/scale, DRAINS to exclude/bid-down.
         winners=[]; drains=[]
         for rid,(co,cv,vl) in greg.items():
@@ -592,9 +619,11 @@ h2.t{{font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;color:#6474
         srows2=[]
         # Location targeting type READS via campaign.geo_target_type_setting — show it, don't punt to UI.
         gt=c.get("geo_target_type") or (c.get("geo_target_type_setting") or {}).get("positive_geo_target_type")
-        if gt in (7,"7","PRESENCE_OR_INTEREST"):
-            srows2.append(vrow("FIX","Location targeting","Presence-OR-Interest — serves users merely interested in the geo",cnt,action="Switch to Presence-only (People in your targeted locations) to cut interest-based waste."))
-        elif gt in (5,"5","PRESENCE"):
+        # Official enum (verified): 7=PRESENCE (correct), 5=PRESENCE_OR_INTEREST / 6=SEARCH_INTEREST (leak).
+        if gt in GEO_POS_LEAK:
+            lbl="Presence-OR-Interest" if gt in (5,"5","PRESENCE_OR_INTEREST") else "Search-Interest"
+            srows2.append(vrow("FIX","Location targeting",f"{lbl} — serves users merely interested in the geo",cnt,action="Switch to Presence-only (People in your targeted locations) to cut interest-based waste."))
+        elif gt in GEO_POS_GOOD:
             srows2.append(vrow("GOOD","Location targeting","Presence-only (people physically in the geo)",cnt))
         # Enhanced Conversions READS at customer level (set once on the bundle meta).
         ec=(b.get("measurement") or {}).get("enhanced_conversions") if isinstance(b.get("measurement"),dict) else b.get("enhanced_conversions")
