@@ -15,8 +15,10 @@ A missing source is flagged `UNVERIFIED` in the output, never fabricated.
   true-ROAS, feed health, and the value cross-check. Connect them for the full cost-cutting depth.
 - **Python 3** with two libraries (the deterministic scripts use them):
   `python -m pip install pyyaml openpyxl`
-- **A working folder per business** (e.g. `~/ads/acme/`). It holds `account-context.yaml` and every output.
-  Keep it OUTSIDE the plugin repo — business data never lives in the plugin.
+- **A working folder per business** (e.g. `~/ads/acme/`). It holds `account-context.yaml` and every output in
+  dated subfolders (`audits/`, `plans/`, `builds/`, `changes/`, `raw/`). Keep it OUTSIDE the plugin repo —
+  business data never lives in the plugin, and the suite never scatters files elsewhere. Secrets are recorded
+  as **pointers** (where the token lives), never copied in. Full spec: `references/workspace-layout.md`.
 
 ## 2. Install
 - **Published:** `/plugin install claude-google-ads@chanktb/claude-google-ads` → the `/google-ads` command

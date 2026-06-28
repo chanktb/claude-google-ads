@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Added a canonical workspace layout** (`references/workspace-layout.md`) so an installed plugin produces ONE
+  tidy folder per business, never scattered files. Defines the `<workdir>` + dated subfolders (audits/ plans/
+  builds/ changes/ raw/), the shared-vs-per-site multi-site patterns, and a NON-NEGOTIABLE secrets rule:
+  tokens are recorded as POINTERS in the connections registry (`via: env:/path#KEY | server:/path | mcp:<id>`),
+  NEVER copied into the folder, outputs, or `account-context.yaml`. `setup` now creates + confirms the workdir
+  first; the router and USAGE point at the spec. Merchant Center is recognized as a runnable local server
+  (e.g. a `google-merchant-mcp` venv + ADC) for the D14 disapproval/GTIN layer.
 - **Clarified D14 product/feed into 3 sourced layers** (a CEO question: "products show in Google Ads via the
   Merchant link — why report no data?"). Verified live: `shopping_performance_view` returns FULL product data
   (item_id/title/brand/type/condition + cost/impr/conv) through the Ads↔Merchant link — products ARE in Ads and

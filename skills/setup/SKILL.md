@@ -14,7 +14,16 @@ You build `account-context.yaml`, the single source of business truth that every
 suite reads. Nothing downstream (audit, plan, builder, pusher, tracker, optimizer) runs without it.
 
 ## Operating rules
-- **Write to the current working directory** (`./account-context.yaml`), NEVER inside the plugin folder.
+- **Establish ONE working folder per business and keep everything in it** — see
+  `${CLAUDE_PLUGIN_ROOT}/references/workspace-layout.md`. On first run, agree the `<workdir>` path with the user,
+  create it, and write `account-context.yaml` there. Every downstream output goes into its dated subfolder
+  (`audits/`, `plans/`, `builds/`, `changes/`, `raw/`). NEVER scatter files into the plugin folder, `D:\tmp`,
+  `/tmp`, or the cwd root — a user who installs the plugin must get ONE tidy folder, not sprinkled files.
+- **Secrets are POINTERS, never copies.** Do NOT write raw API tokens/keys into the working folder, any output,
+  or `account-context.yaml`. The `connections` registry records *where* each token lives (`via: env:/path#KEY`,
+  `via: server:/path`, `via: mcp:<id>`) and it's read at runtime. If the user wants creds kept locally, a
+  gitignored `secrets/` in the workdir — never committed, never in a report.
+- (legacy) Write `account-context.yaml` to the working directory, NEVER inside the plugin folder.
   Business data lives with the user, not in the code. (Use `--context <path>` if the user names one.)
 - **Detect by capability, not by hardcoded server ids.** Inspect the connected MCP tools and match them
   to roles. The same skill must work for any user's MCP setup.

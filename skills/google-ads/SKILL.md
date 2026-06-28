@@ -93,4 +93,7 @@ it to **return raw, not conclude**. Each sub-skill carries its own per-STEP tier
 ## Notes
 - The router orchestrates; each sub-skill reads the same `account-context.yaml` and writes to the working
   directory. Business data never lives in the plugin — it stays in your local `account-context.yaml`.
+- **One working folder per business; nothing scattered.** All context + outputs live under a single
+  `<workdir>` with dated subfolders, and secrets are recorded as POINTERS (not copied) — see
+  `${CLAUDE_PLUGIN_ROOT}/references/workspace-layout.md`. If there's no working folder yet, `setup` creates it.
 - Sub-skills are invoked by their namespaced names (`claude-google-ads:setup`, `claude-google-ads:audit`, …).
