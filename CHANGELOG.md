@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **One audit = one HTML report.** The audit used to ship two files — `AUDIT.html` (the real merged
+  score+leaks+per-campaign deliverable from `money_leak_report.py`) and a legacy score-only `audit-report.html`
+  (from `audit_to_html.py`). The skill called `AUDIT.html` "the deliverable" yet `commands/audit.md`, `docs/USAGE.md`,
+  and the model-tier line still told the agent to render `audit_to_html.py`/`audit-report.html`, so a one-shot run
+  produced BOTH and confused users. Removed `audit_to_html.py` entirely and pointed every reference (command,
+  SKILL, USAGE, template comment) at the single `AUDIT.html`. There is now exactly one HTML report per audit.
+
 - **Cleaner command names + a real "how to run" guide.** Plugin commands are namespaced under
   `claude-google-ads`, so the old `google-ads-*` filenames produced double-prefixed slash commands
   (`/claude-google-ads:google-ads-setup`). Renamed the command files to drop the redundant prefix →

@@ -1,6 +1,6 @@
 {
   "result_version": 1,
-  "_comment": "Structured output of the audit skill. audit_to_html.py renders this into a self-contained, client-ready HTML report. Generic example below.",
+  "_comment": "Structured output (the score) of the audit skill. Written next to bundle.json; money_leak_report.py merges it into the single client-ready AUDIT.html. Generic example below.",
   "account": { "name": "Example Store", "customer_id": "123-456-7890", "currency": "USD" },
   "generated": "2026-06-26",
   "period": "Last 30 days",

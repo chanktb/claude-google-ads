@@ -10,7 +10,9 @@ pmax-campaign-builder, ads-google, ads-meta, claude-growth, etc.) — this comma
 claude-google-ads suite.
 
 If no `account-context.yaml` exists here, run `/google-ads-setup` first. Build the active campaign set
-(ENABLED + impressions in the window) before scoring, apply GUARD-1…6, then write `GOOGLE-ADS-AUDIT.md`,
-`audit-result.json`, and `audit-report.html`.
+(ENABLED + impressions in the window) before scoring, apply GUARD-1…6, then write `audit-result.json` (the score)
+and render the **single** client report `AUDIT.html` via `money_leak_report.py` (it also emits
+`MONEY-LEAK-REPORT.md` + `DETAILED-ACCOUNT-REPORT.md`). There is ONE HTML report — `AUDIT.html`. Do not produce a
+second HTML file.
 
 $ARGUMENTS

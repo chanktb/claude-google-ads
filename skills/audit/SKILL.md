@@ -65,7 +65,7 @@ queries by `campaign.id IN (active set)`, or pull them WITH metrics over the win
 rows app-side (metrics can't go in a GAQL WHERE). Never audit a campaign that hasn't served in the window.
 
 ## Model dispatch (run cheap, decide expensive) — see `${CLAUDE_PLUGIN_ROOT}/references/model-tier-dispatch.md`
-- **Scout (`haiku`)** — STEP 0 context read; the `audit_to_html.py` render + `audit-result.json` write; single URL/landing 200 checks.
+- **Scout (`haiku`)** — STEP 0 context read; the `money_leak_report.py` render (→ the single `AUDIT.html`) after the Judge writes `audit-result.json`; single URL/landing 200 checks.
 - **Routine (`sonnet`)** — build the active-campaign set; the account data-bundle pull (campaigns, assets, change history); the dual-source search-term pull (per-PMax `campaign_search_term_insight` loop). Dispatch as `general-purpose` sub-agents (they keep MCP); tell them to **return raw rows, not score**.
 - **Judge (main session)** — applying GUARD-1…6, every PASS/WARN/FAIL call, the score, the Gap-to-100 ledger, Quick Wins. **Never delegate a guard or a verdict** — a Scout pulls numbers, the Judge says what they mean.
 
@@ -203,8 +203,9 @@ score donut + grade, the 6 weighted category bars (fixable/unverified findings),
 a **visual per-campaign section** (ROAS-vs-target bar with target tick, status pill, channel-split bar,
 extension/signal chips), Merchant feed table, quick wins, change timeline, verify-in-UI. It auto-detects
 `audit-result.json` next to the bundle (or pass `--audit-result`); without it AUDIT.html degrades to
-money-leak-only. **AUDIT.html is THE deliverable to send a client — one file, score + full check + leaks +
-per-campaign visuals together** (the standalone `audit_to_html.py` score-only report is now optional/legacy).
+money-leak-only. **AUDIT.html is THE — and the ONLY — HTML deliverable: one file, score + full check + leaks +
+per-campaign visuals together.** Do not render any second HTML report (no `audit-report.html`); there is exactly
+one HTML output per audit.
 Then the **Judge** (you) adds verify-in-UI verdicts. **When a pull returns nothing, assume wrong method (field
 name / resource / missing `metrics.*` / repeated-enum serialize), not an API limit — retry before writing
 "verify-in-UI"** (see gaql-notes principle).
@@ -317,13 +318,13 @@ next to the bundle for the score + the account panel's category verdicts.
   that auto-merges this score JSON (account panel + category verdicts) with the per-campaign chart blocks
   (gauge / ring / donut / bars / heatmap) where every item is **data → verdict → action**. ONE self-contained
   file. **Do NOT ship the score and the money-leak as two separate HTML files** — the audit is one document.
-- `audit_to_html.py audit-result.json --output audit-report.html` still exists for a **score-only** quick view
-  (legacy/optional); the headline deliverable is the merged visual `AUDIT.html`.
+- **There is exactly ONE HTML report: `AUDIT.html`.** The old score-only `audit_to_html.py`/`audit-report.html`
+  path has been REMOVED — do not look for it or generate a second file.
 
 ## To build / refine later
 - [x] **Per-campaign visual-explainer `AUDIT.html`** — `scripts/money_leak_report.py` renders the chart-rich,
-  data→verdict→action report (gauge/ring/donut/bars/heatmap + account panel + scorecards). The score-only
-  `scripts/audit_to_html.py` is the legacy fallback. Done.
+  data→verdict→action report (gauge/ring/donut/bars/heatmap + account panel + scorecards). This is the SOLE HTML
+  report; the legacy `audit_to_html.py` was removed. Done.
 - [x] Full granular check-ID catalog (G01…G61 + extensions) in `${CLAUDE_PLUGIN_ROOT}/skills/audit/references/google-audit-checks.md`. Done.
 - [ ] Vertical-specific benchmark bands in `${CLAUDE_PLUGIN_ROOT}/references/`.
 - [ ] Per-keyword QS + RSA pin/headline-count detail for Search campaigns (currently summarized).

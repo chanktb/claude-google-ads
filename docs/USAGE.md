@@ -61,9 +61,10 @@ Each command reads `account-context.yaml` from the current working directory and
    - pull data via the Google Ads MCP, apply the 6 guards, score the 80-check catalog,
    - write the outputs.
 4. **Outputs land in the folder:**
-   - `GOOGLE-ADS-AUDIT.md` — full findings + per-category Gap-to-100 ledger (fixable vs verify-in-UI)
-   - `audit-result.json` — the structured result
-   - `audit-report.html` — the polished, shareable client report (open in a browser)
+   - `audit-result.json` — the structured result (the score)
+   - `AUDIT.html` — the single, polished, shareable client report (open in a browser): score + full check +
+     money-leaks + per-campaign visuals in one file
+   - `MONEY-LEAK-REPORT.md` + `DETAILED-ACCOUNT-REPORT.md` — the markdown companions
 
 **Prepare for the best audit:** know the customer id (or let setup detect it), pick the window (default 30d),
 and link GA4 + the store connector if you can. Missing connectors don't block — the audit flags what it
@@ -73,7 +74,7 @@ couldn't verify rather than guessing.
 ```
 cd ~/ads/acme
 /claude-google-ads:setup        # detect MCPs, write account-context.yaml
-/claude-google-ads:audit        # -> GOOGLE-ADS-AUDIT.md + audit-result.json + audit-report.html
+/claude-google-ads:audit        # -> audit-result.json + AUDIT.html (single report) + MONEY-LEAK-REPORT.md
 /claude-google-ads:measurement  # tracking gate (do this before spend)
 /claude-google-ads:plan         # -> GOOGLE-ADS-PLAN.md (campaign mix + forecast)
 /claude-google-ads:pmax         # -> blueprint.xlsx + campaign-spec.json
@@ -88,7 +89,7 @@ You can pass extra context after any command, e.g. `/claude-google-ads:pmax OPI 
 | Script | Purpose |
 |---|---|
 | `skills/setup/scripts/validate_context.py` | validate account-context.yaml + readiness gates |
-| `skills/audit/scripts/audit_to_html.py` | audit-result.json → shareable HTML report |
+| `skills/audit/scripts/money_leak_report.py` | bundle.json (+ audit-result.json) → the single `AUDIT.html` + MD reports |
 | `skills/plan/scripts/forecaster.py` | budget → conversions / CPA / ROAS bands |
 | `skills/builder-pmax/scripts/spec_to_xlsx.py` | campaign-spec.json → styled Excel blueprint |
 | `skills/pusher/scripts/validate_spec.py` | pre-push validation + spend-cap gate (Google-accurate char counts) |
