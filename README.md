@@ -113,8 +113,29 @@ connect them. `/google-ads` checks this up front and guides you.
 /plugin install claude-google-ads@chanktb/claude-google-ads
 ```
 
-Then run `/google-ads` — it checks your connections, runs `setup` if there's no context, and points you to
-the next step.
+## How to run it (you don't memorize anything)
+
+Plugin commands are namespaced under `claude-google-ads`. Three ways to use them — pick whichever:
+
+1. **Type `/claude-google-ads`** → the menu lists every command; arrow down and pick. This is the normal way —
+   no need to remember names.
+2. **Just describe what you want** in plain language — "audit my Google Ads", "set up Google Ads for my
+   store", "build a PMax campaign" — and the matching skill runs automatically.
+3. **Type the exact command** if you know it:
+
+| Job | Command |
+|---|---|
+| Start / "where am I" | `/claude-google-ads:google-ads` |
+| Onboard (build context) | `/claude-google-ads:setup` |
+| Validate tracking | `/claude-google-ads:measurement` |
+| Audit + money-leak report | `/claude-google-ads:audit` |
+| Optimize a live account | `/claude-google-ads:optimize` |
+| Plan a launch/expansion | `/claude-google-ads:plan` |
+| Build campaigns | `/claude-google-ads:pmax` · `:search` · `:branded` · `:demandgen` |
+| Push / monitor / operate | `/claude-google-ads:push` · `:track` · `:routine` · `:experiment` · `:assets` |
+
+**First run:** `/claude-google-ads:setup` (creates your working folder + `account-context.yaml`), then
+`/claude-google-ads:audit`.
 
 **Full usage guide (what to prepare, the command for each job, a first-run walkthrough):**
 [`docs/USAGE.md`](docs/USAGE.md).

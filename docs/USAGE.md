@@ -3,7 +3,7 @@
 How to run the suite day-to-day: what to prepare, how to start, and the command for each job.
 
 ## 1. Prepare — connect your data FIRST (the suite never guesses)
-`setup` inventories these into the context `connections` block; `/google-ads` checks them before routing.
+`setup` inventories these into the context `connections` block; `/claude-google-ads:google-ads` checks them before routing.
 A missing source is flagged `UNVERIFIED` in the output, never fabricated.
 - **Google Ads** — a read-only GAQL MCP. **MANDATORY** (nothing runs without it).
 - **Store** (Shopify / WooCommerce / BigCommerce — an MCP or an Admin token in a local `.env`) —
@@ -21,7 +21,7 @@ A missing source is flagged `UNVERIFIED` in the output, never fabricated.
   as **pointers** (where the token lives), never copied in. Full spec: `references/workspace-layout.md`.
 
 ## 2. Install
-- **Published:** `/plugin install claude-google-ads@chanktb/claude-google-ads` → the `/google-ads` command
+- **Published:** `/plugin install claude-google-ads@chanktb/claude-google-ads` → the `/claude-google-ads:google-ads` command
   and all skills become available.
 - **Local / dev (current):** add this project as a local plugin, or copy `skills/` into `~/.claude/skills/`.
   Or simply ask Claude in chat to run a skill against your folder (Claude reads the skill + runs the scripts).
@@ -33,30 +33,30 @@ installed (`google-ads-optimizer`, `pmax-campaign-builder`, `ads-google`, `ads-m
 
 | You want to… | Command |
 |---|---|
-| Start / not sure where you are | `/google-ads` (router → tells you the next command) |
-| Onboard a business | `/google-ads-setup` |
-| **Audit an account** | `/google-ads-audit` |
-| Validate conversion tracking | `/google-ads-measurement` |
-| Plan a launch / budget | `/google-ads-plan` |
-| Build a PMax campaign | `/google-ads-pmax` |
-| Build a Search campaign | `/google-ads-search` |
-| Build a Branded Search campaign | `/google-ads-branded` |
-| Build a Demand Gen campaign | `/google-ads-demandgen` |
-| Push / export to Google Ads | `/google-ads-push` |
-| Monitor a live campaign | `/google-ads-track` |
-| Optimize / weekly review | `/google-ads-optimize` |
-| **Daily/weekly routine (gated, remembers history)** | `/google-ads-routine` |
-| Design an A/B test | `/google-ads-experiment` |
-| Write ad copy / assets | `/google-ads-assets` |
+| Start / not sure where you are | `/claude-google-ads:google-ads` (router → tells you the next command) |
+| Onboard a business | `/claude-google-ads:setup` |
+| **Audit an account** | `/claude-google-ads:audit` |
+| Validate conversion tracking | `/claude-google-ads:measurement` |
+| Plan a launch / budget | `/claude-google-ads:plan` |
+| Build a PMax campaign | `/claude-google-ads:pmax` |
+| Build a Search campaign | `/claude-google-ads:search` |
+| Build a Branded Search campaign | `/claude-google-ads:branded` |
+| Build a Demand Gen campaign | `/claude-google-ads:demandgen` |
+| Push / export to Google Ads | `/claude-google-ads:push` |
+| Monitor a live campaign | `/claude-google-ads:track` |
+| Optimize / weekly review | `/claude-google-ads:optimize` |
+| **Daily/weekly routine (gated, remembers history)** | `/claude-google-ads:routine` |
+| Design an A/B test | `/claude-google-ads:experiment` |
+| Write ad copy / assets | `/claude-google-ads:assets` |
 
 Each command reads `account-context.yaml` from the current working directory and writes outputs there.
 
 ## 4. Run an AUDIT — step by step
 1. **Enter the business folder:** `cd ~/ads/acme`
 2. **First time? Run setup** (produces `account-context.yaml`):
-   - `/google-ads` (auto-runs setup when no context exists), answer the few questions, confirm.
+   - `/claude-google-ads:google-ads` (auto-runs setup when no context exists), answer the few questions, confirm.
    - Verify: `python <plugin>/skills/setup/scripts/validate_context.py ./account-context.yaml`
-3. **Run the audit:** say **"audit my account"** (or `/google-ads` → audit). It will:
+3. **Run the audit:** say **"audit my account"** (or `/claude-google-ads:google-ads` → audit). It will:
    - build the **active campaign set** (ENABLED + impressions in the window — dormant campaigns excluded),
    - pull data via the Google Ads MCP, apply the 6 guards, score the 80-check catalog,
    - write the outputs.
@@ -72,17 +72,17 @@ couldn't verify rather than guessing.
 ## 5. A full first run (copy-paste mental model)
 ```
 cd ~/ads/acme
-/google-ads-setup        # detect MCPs, write account-context.yaml
-/google-ads-audit        # -> GOOGLE-ADS-AUDIT.md + audit-result.json + audit-report.html
-/google-ads-measurement  # tracking gate (do this before spend)
-/google-ads-plan         # -> GOOGLE-ADS-PLAN.md (campaign mix + forecast)
-/google-ads-pmax         # -> blueprint.xlsx + campaign-spec.json
-/google-ads-push         # -> Editor CSV (Search) or guided checklist (PMax) + ready-to-copy
+/claude-google-ads:setup        # detect MCPs, write account-context.yaml
+/claude-google-ads:audit        # -> GOOGLE-ADS-AUDIT.md + audit-result.json + audit-report.html
+/claude-google-ads:measurement  # tracking gate (do this before spend)
+/claude-google-ads:plan         # -> GOOGLE-ADS-PLAN.md (campaign mix + forecast)
+/claude-google-ads:pmax         # -> blueprint.xlsx + campaign-spec.json
+/claude-google-ads:push         # -> Editor CSV (Search) or guided checklist (PMax) + ready-to-copy
 # later, once live:
-/google-ads-track        # pacing / learning
-/google-ads-optimize     # weekly review + action plan
+/claude-google-ads:track        # pacing / learning
+/claude-google-ads:optimize     # weekly review + action plan
 ```
-You can pass extra context after any command, e.g. `/google-ads-pmax OPI gel, $80/day`.
+You can pass extra context after any command, e.g. `/claude-google-ads:pmax OPI gel, $80/day`.
 
 ## 6. The runnable scripts (the skills call these; you rarely run them by hand)
 | Script | Purpose |

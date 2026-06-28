@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Cleaner command names + a real "how to run" guide.** Plugin commands are namespaced under
+  `claude-google-ads`, so the old `google-ads-*` filenames produced double-prefixed slash commands
+  (`/claude-google-ads:google-ads-setup`). Renamed the command files to drop the redundant prefix →
+  `/claude-google-ads:setup`, `:audit`, `:plan`, `:pmax`, `:search`, `:branded`, `:demandgen`, `:push`,
+  `:track`, `:optimize`, `:routine`, `:experiment`, `:assets` (+ `:google-ads` router). README now has a
+  "How to run it" section: users type `/claude-google-ads` to browse the menu, or just describe the task in
+  plain language — no namespace to memorize. (Surfaced when a fresh install showed `/google-ads` as Unknown.)
 - **Added a canonical workspace layout** (`references/workspace-layout.md`) so an installed plugin produces ONE
   tidy folder per business, never scattered files. Defines the `<workdir>` + dated subfolders (audits/ plans/
   builds/ changes/ raw/), the shared-vs-per-site multi-site patterns, and a NON-NEGOTIABLE secrets rule:

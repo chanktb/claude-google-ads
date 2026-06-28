@@ -4,11 +4,10 @@ description: Entry point for the claude-google-ads suite — routes to setup, au
 
 # /google-ads
 
-Router / "where am I" entry point. For a specific step, prefer the **dedicated command** (deterministic,
-no collision with other ads skills): `/google-ads-setup`, `/google-ads-audit`, `/google-ads-measurement`,
-`/google-ads-plan`, `/google-ads-pmax`, `/google-ads-search`, `/google-ads-branded`, `/google-ads-demandgen`,
-`/google-ads-push`, `/google-ads-track`, `/google-ads-optimize`, `/google-ads-routine`,
-`/google-ads-experiment`, `/google-ads-assets`.
+Router / "where am I" entry point. For a specific step, prefer the **dedicated command**:
+`/claude-google-ads:setup`, `:audit`, `:measurement`, `:plan`, `:pmax`, `:search`, `:branded`, `:demandgen`,
+`:push`, `:track`, `:optimize`, `:routine`, `:experiment`, `:assets`. (Type `/claude-google-ads` to see them
+all in the menu — you don't memorize the names.)
 
 Use this `/google-ads` command when the user is unsure where they are: read the context, report the stage,
 and tell them the single dedicated command to run next.
