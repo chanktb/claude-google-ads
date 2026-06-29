@@ -82,6 +82,17 @@ live in `campaign_search_term_insight` (query per campaign_id). A PMax-heavy acc
 - "cheap / budget <brand>" — price-sensitive buyers convert in both B2C and B2B (esp. wholesale/value
   stores); check CTR + CVR before blocking, don't assume "cheap" = junk.
 
+### N-gram modifiers + conflict detection
+- **N-gram analysis** beats per-term whack-a-mole on large search-term sets: aggregate 1-2 word tokens across the
+  waste pool, rank by spend and recurrence (≥2 terms), and one phrase negative on a recurring junk modifier
+  ("how to", "jobs", "tutorial") removes many wasted queries at once. Exclude own/carried brand tokens from the
+  surfacing — never propose cutting a brand you sell.
+- **Conflict detection — never negate a converter.** Before proposing OR pushing a negative, cross-check it
+  against the CONVERTING queries (conv>0): an exact negative conflicts if it equals a converting query; a phrase
+  negative conflicts if it's a substring of one. A negative that would block a converter cuts proven revenue —
+  drop or tighten it. The miner does this automatically; the change-set validator re-checks at push via
+  `--converting-terms`.
+
 ## PMax bidding & scheduling caveats
 PMax **does** support location AND ad-schedule bid adjustments (campaign-criterion `bid_modifier`, since 2024) —
 it is NOT exclusion-only. Use ad-schedule bid modifiers for dayparting and location bid modifiers for geo on PMax

@@ -75,6 +75,46 @@ def carried_lists(context_path):
     return norm(raw), set(norm(own))
 
 
+def load_converters(path):
+    """JSON list of converting query strings (or [{term/text/query,...}]). Lowercased."""
+    if not path:
+        return []
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+    except FileNotFoundError:
+        warn(f"converting-terms file not found: {path} — conflict check skipped")
+        return []
+    out = []
+    for x in raw if isinstance(raw, list) else []:
+        s = x if isinstance(x, str) else (x.get("term") or x.get("text") or x.get("query") or "")
+        if s:
+            out.append(str(s).lower().strip())
+    return sorted(set(out))
+
+
+def neg_blocks(neg_text, exact, query):
+    q, n = str(query).lower().strip(), str(neg_text).lower().strip()
+    if exact:
+        return q == n
+    pat = r"(?<![a-z0-9])" + r"\s+".join(re.escape(w) for w in n.split()) + r"(?![a-z0-9])"
+    return re.search(pat, q) is not None
+
+
+def check_conflict(a, name, converters):
+    """A negative must NEVER block a CONVERTING query — that's cutting proven revenue."""
+    if not converters:
+        return
+    for nrec in a.get("negatives") or []:
+        text = nrec.get("text", "")
+        exact = (nrec.get("match_type") == "exact")
+        for cq in converters:
+            if neg_blocks(text, exact, cq):
+                err(f"{name}: negative '{text}' would BLOCK a converting query \"{cq}\" — never negate a term "
+                    f"that converts (it cuts proven revenue). Tighten the negative or drop it.")
+                break
+
+
 def check_carried(a, name, carried, own_camp):
     if not carried:
         return
@@ -171,6 +211,9 @@ def main():
     ap.add_argument("--context", default=None, help="account-context.yaml for brand-term protection")
     ap.add_argument("--max-budget", type=float, default=None, help="daily spend cap")
     ap.add_argument("--budget-step", type=float, default=0.10, help="max budget step fraction (default 0.10)")
+    ap.add_argument("--converting-terms", default=None,
+                    help="JSON list of CONVERTING query strings (conv>0). If given, a negative that would block "
+                         "any of them is a conflict ERROR. Optimizer can pass terms.json's converters here.")
     args = ap.parse_args()
 
     try:
@@ -188,6 +231,7 @@ def main():
 
     toks = brand_tokens(args.context)
     carried, own_camp = carried_lists(args.context)
+    converters = load_converters(args.converting_terms)
     if args.max_budget is None:
         warn("no --max-budget cap passed — spend-cap guard not enforced")
 
@@ -217,6 +261,7 @@ def main():
             check_negatives(a, name)
             check_brand(a, name, toks)
             check_carried(a, name, carried, own_camp)
+            check_conflict(a, name, converters)
         elif t == "adjust_budget":
             check_budget(a, name, tgt, args.max_budget, args.budget_step)
             check_scale_gates(a, name, tgt)

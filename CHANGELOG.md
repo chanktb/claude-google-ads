@@ -24,6 +24,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Search-term miner: n-gram modifier surfacing + conflict detection** (two techniques adapted from a survey of
+  the agency-agents PPC playbooks — the rest of that repo is persona-level and already covered by our builders).
+  (1) **N-gram analysis** aggregates 1-2 word tokens across the waste pool, ranked by spend and recurrence (≥2
+  terms), so one phrase negative kills many wasted queries instead of per-term whack-a-mole; own/carried brand
+  tokens are excluded from the surfacing. (2) **Conflict detection** cross-checks every proposed negative against
+  the CONVERTING queries (conv>0) and drops any that would block one (exact = same query, phrase = substring) —
+  never cut proven revenue. The change-set validator gains `--converting-terms` to re-enforce this at push time
+  (defense-in-depth with never-block-brand + carried-brand gates).
 - **Competitive intelligence: impression share + Auction-Insights competitor domains.** The account overview's
   "auction insights" (the rivals you share auctions with) is now an audit input. Two layers: (1) **impression
   share** — `metrics.search_impression_share` / `_rank_lost_` / `_budget_lost_` per campaign (PUBLIC, always

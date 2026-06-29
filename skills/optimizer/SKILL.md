@@ -76,9 +76,23 @@ to an existing dedicated campaign (derive from the active-campaign names, e.g. "
 these, the miner will mislabel carried brands (Kupa/Chaun Legend/Kiara Sky on ND) as competitors — exactly the
 bug to avoid.
 Runnable: `python ${CLAUDE_PLUGIN_ROOT}/skills/optimizer/scripts/search_term_miner.py terms.json`
-(input keys: `brand_terms`, `carried_brands`, `brands_with_own_campaign`, `min_spend`, `terms`) → wasted spend +
-categorized, ready-to-copy wrapped negatives, with carried-brand / routing / competitor-candidate buckets kept
-separate and carried-brand-without-a-campaign held back from blocking.
+(input keys: `brand_terms`, `carried_brands`, `brands_with_own_campaign`, `min_spend`, `terms` — each term may
+carry `conversions`/`conv_value`) → wasted spend + categorized, ready-to-copy wrapped negatives, with
+carried-brand / routing / competitor-candidate buckets kept separate and carried-brand-without-a-campaign held
+back from blocking.
+
+### N-gram modifiers + conflict detection (built in to the miner)
+- **N-gram surfacing**: the miner aggregates 1- and 2-word tokens across the whole waste pool, ranked by $ and
+  by how many terms each appears in (≥2 = recurring). One phrase negative on a recurring junk modifier (e.g.
+  `"how to"`, `"jobs"`, `"tutorial"`) kills many wasted queries at once — far more efficient than per-term
+  negatives. Own-brand and carried-brand tokens are excluded from the surfacing (never propose cutting a brand
+  you sell). Treat as candidates — a broad modifier can over-reach; eyeball before pushing.
+- **Conflict detection — NEVER negate a converter**: the miner cross-checks every proposed negative against the
+  CONVERTING queries (`conversions`/`conv_value` > 0) and drops any that would block one (exact = same query,
+  phrase = substring), listing them under "Conflict-blocked". Always pass terms WITH their conversion fields so
+  this fires. **At push time, also run** `validate_changeset.py --converting-terms <converters.json>` (a JSON
+  list of converting queries) so the pusher gate re-blocks any negative that would cut proven revenue —
+  defense-in-depth alongside the never-block-brand and carried-brand gates.
 
 ## STEP 4 — Asset groups / creative
 Flag asset groups with ROAS below the tier target and meaningful spend, POOR ad strength (ENABLED + has

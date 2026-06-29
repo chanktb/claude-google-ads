@@ -42,8 +42,45 @@ CATS = {
 PROTECT = ["store", "coupon", "discount code", "promo code", "cheap"]
 
 
+import re
+
+# Generic glue words — never a meaningful modifier on their own (excluded from n-gram surfacing).
+STOPWORDS = {
+    "the", "a", "an", "and", "or", "of", "for", "to", "with", "in", "on", "at", "by", "from", "vs",
+    "my", "your", "best", "top", "near", "buy", "online", "shop", "get", "new", "is", "are",
+}
+
+
 def wrap(term, exact=True):
     return f"[{term}]" if exact else f'"{term}"'
+
+
+def tokens(term):
+    return [t for t in re.split(r"[^a-z0-9]+", term.lower()) if t]
+
+
+def ngrams_of(toks, n):
+    return [" ".join(toks[i:i + n]) for i in range(len(toks) - n + 1)]
+
+
+def neg_blocks(neg_text, exact, query):
+    """Would a negative (exact/phrase) block this query? exact = identical query only; phrase = substring on
+    word boundaries. Used for conflict detection against CONVERTING queries — never block a converter."""
+    q = query.lower().strip()
+    n = neg_text.lower().strip()
+    if exact:
+        return q == n
+    # phrase: contiguous word-boundary match
+    pat = r"(?<![a-z0-9])" + r"\s+".join(re.escape(w) for w in n.split()) + r"(?![a-z0-9])"
+    return re.search(pat, q) is not None
+
+
+def conflicts_with_converter(neg_text, exact, converters):
+    """Return the first converting query a negative would block, else None."""
+    for cq in converters:
+        if neg_blocks(neg_text, exact, cq):
+            return cq
+    return None
 
 
 def categorize(term):
@@ -80,12 +117,16 @@ def main():
 
     wasted, protected, proposed = [], [], {}
     brand_kept, carried_protect, route_neg, competitor_cand = [], [], [], []
+    converters = []          # CONVERTING queries (conv>0) — a negative must never block one
+    ngram_pool = []          # (cost, term) of genuine waste candidates — feed the n-gram surfacer
     total_waste = 0.0
 
     for row in data.get("terms") or []:
         term = (row.get("term") or "").strip()
         cost = row.get("cost", 0) or 0
         conv = row.get("conversions", 0) or 0
+        if term and (conv > 0 or (row.get("conv_value", 0) or 0) > 0):
+            converters.append(term.lower())
         if not term or cost <= min_spend or conv > 0:
             continue
         tl = term.lower()
@@ -117,6 +158,7 @@ def main():
         if cat:
             total_waste += cost
             wasted.append((cost, term, cat))
+            ngram_pool.append((cost, term))
             sig = next((p for p in CATS.get(cat, []) if p in tl), term)
             proposed.setdefault(cat, set()).add(wrap(sig, exact=False))
             continue
@@ -126,6 +168,51 @@ def main():
         total_waste += cost
         wasted.append((cost, term, "unclassified"))
         competitor_cand.append((cost, term))
+        ngram_pool.append((cost, term))
+
+    # ---- Conflict detection: a proposed negative must NEVER block a CONVERTING query ----
+    conv_set = sorted(set(converters))
+    conflicts = []
+    for cat, items in list(proposed.items()):
+        keep = set()
+        for it in items:
+            exact = it.startswith("[")
+            txt = it[1:-1]  # strip [] or ""
+            hit = conflicts_with_converter(txt, exact, conv_set)
+            if hit:
+                conflicts.append((cat, it, hit))
+            else:
+                keep.add(it)
+        if keep:
+            proposed[cat] = keep
+        else:
+            del proposed[cat]
+
+    # ---- N-gram modifier surfacing: recurring wasteful tokens across the waste pool, ranked by $ ----
+    skip_tokens = set(STOPWORDS)
+    for b in brand + carried:
+        skip_tokens.update(tokens(b))
+    gram_cost, gram_docs = {}, {}
+    for cost, term in ngram_pool:
+        tks = [t for t in tokens(term)]
+        seen_here = set()
+        for n in (1, 2):
+            for g in ngrams_of(tks, n):
+                gwords = g.split()
+                if any(w in skip_tokens for w in gwords):
+                    continue
+                if brand_hit(g, carried):
+                    continue  # never surface a carried-brand n-gram as a cut
+                gram_cost[g] = gram_cost.get(g, 0.0) + cost
+                if g not in seen_here:
+                    gram_docs[g] = gram_docs.get(g, 0) + 1
+                    seen_here.add(g)
+    # recurring (>=2 terms) modifiers, conflict-checked, ranked by spend
+    ngram_cands = []
+    for g, c in gram_cost.items():
+        if gram_docs.get(g, 0) >= 2 and not conflicts_with_converter(g, False, conv_set):
+            ngram_cands.append((c, gram_docs[g], g))
+    ngram_cands.sort(reverse=True)
 
     wasted.sort(key=lambda r: -r[0])
     print(f"\n=== Search-term mining (wasted = >${min_spend} spend, 0 conv) ===")
@@ -135,10 +222,25 @@ def main():
 
     print("\n--- Proposed negatives (ready-to-copy, grouped) ---")
     print("# SAFE pattern negatives (info / job-seeker / location / piracy) + routing for brands with own camp.")
+    print("# (Conflict-checked: anything that would block a converting query was removed — see conflicts below.)")
     for cat, items in proposed.items():
         print(f"\n# {cat}")
         for it in sorted(items):
             print(it)
+
+    if ngram_cands:
+        print(f"\n--- 🔎 N-gram modifiers — recurring wasteful tokens across the waste pool (ranked by $) ---")
+        print("  Each appears in ≥2 wasted terms and would NOT block any converter. Strong phrase-negative")
+        print("  candidates — one negative kills many wasted queries. Review before pushing (a broad modifier")
+        print("  can over-reach). Format: $spend · in N terms · token")
+        for c, docs, g in ngram_cands[:15]:
+            print(f"  ${c:>8,.2f} · {docs:>2} terms · {wrap(g, exact=False)}")
+
+    if conflicts:
+        print(f"\n--- ⛔ Conflict-blocked — proposed negatives that would kill a CONVERTING query (NOT added) ---")
+        print("  These were auto-removed: adding them would block a search term that actually converts.")
+        for cat, it, hit in conflicts[:15]:
+            print(f"  {it:<28} [{cat}]  ✗ would block converter: \"{hit}\"")
 
     if competitor_cand:
         print("\n--- ⚠ Competitor / unclassified CANDIDATES — CONFIRM the store does NOT sell these before blocking ---")
