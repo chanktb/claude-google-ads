@@ -357,7 +357,7 @@ def main():
                 bud=[x for x in evs if x[1] in ("CampaignBudget","Campaign")]
                 if cn in nm2id and len(bud)>=3:
                     add(nm2id[cn],"Medium",0,"change",f"Whipsawing — {len(bud)} budget/campaign changes/30d",
-                        "Over-tinkering resets learning. Hold to one change per cooldown.","free")
+                        "Over-tinkering destabilizes Smart Bidding. Hold to one change per cooldown.","free")
 
     pm=[c for c in camps if is_pmax(c)]
     for c in pm:

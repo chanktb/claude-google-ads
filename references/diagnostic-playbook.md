@@ -263,7 +263,7 @@ asset-group equivalents. `performance_label` enum = BEST / GOOD / LOW / LEARNING
 | **Missing/thin extensions** | <4 sitelinks, no callouts (target **8–10**), no structured snippets (4+ values) | add them — free SERP real estate + CTR lift; sitelinks 6+ with descriptions documented +3.5% conv |
 | **Duplicate / low-variety headlines** | repeated headline text; <11 distinct in a PMax AG | dedupe; aim **5 brand + 5 benefit + 5 offer** = 15 distinct (repetition kills Ad Strength) |
 | **Below PMax asset minimums** | <3 headlines / <1 long headline / <2 descriptions / <1 image per ratio / <1 logo / <1 video | fill to recommended (11+ / 2+ / 4+ / 4+ each / 1+ / 1+) |
-| **LOW-labeled assets** | `performance_label = LOW`, asset live ≥2–3 weeks | replace — but **1–2 per asset type per week** (more = learning reset); edit-in-place, don't delete/recreate |
+| **LOW-labeled assets** | `performance_label = LOW`, asset live ≥2–3 weeks | replace — but **1–2 per asset type per week** (swapping more at once destabilizes the AG and makes results unreadable); edit-in-place, don't delete/recreate |
 | **POOR ad strength** | ad_group_ad.ad_strength POOR, ENABLED + impressions (GUARD-4) | add headlines/assets toward Good/Excellent (+15% conv avg Poor→Excellent) |
 | **Over-pinning** | a single headline pinned to one slot | pin 2–3 variants to the same slot (single pin locks ~67% of that slot's testing) |
 
@@ -338,7 +338,7 @@ an absence).
 | Diagnosis | Signal | Action |
 |-----------|--------|--------|
 | **Inside cooldown** | a campaign changed within ~7-14d | do NOT scale/judge it yet (feeds GUARD-3 + the Scaling Ladder). Name the date + what changed. |
-| **Whipsawing** | same campaign's budget/target changed 3+ times in the window | over-tinkering resets/destabilizes Smart Bidding → advise HOLDING; one change per cooldown. (example: a campaign's budget changed 3× in 30d.) |
+| **Whipsawing** | same campaign's budget/target changed 3+ times in the window | over-tinkering destabilizes Smart Bidding and makes cause unreadable → advise HOLDING; one change per cooldown. (example: a campaign's budget changed 3× in 30d.) |
 | **Unexpected operator / automated rule** | changes by an unfamiliar `user_email` or automated `client_type` | confirm intent; reconcile with the change log. |
 
 Output a dated timeline (most-recent first) so the operator sees exactly what changed and when — this is also
@@ -391,7 +391,11 @@ a fixable OOS/disapproval, not a bad product.
 
 The hardest real-world problem: a campaign sells at a LOWER tROAS than you want but volume is uneven and won't
 scale; raise the target and it stops selling. The fix is a disciplined ladder — **one variable at a time, with
-cooldowns**, so you never trigger a learning reset or whipsaw the algorithm.
+cooldowns**, so every result stays READABLE: you never judge a change faster than the conversion lag, and you
+always know which move caused a shift. (Note: budget changes are NOT on Google's official Learning-status
+trigger list; support.google.com/google-ads/answer/6263057 lists only new strategy / setting change /
+composition change, and Google's own PM has said modest budget changes don't reset learning. The ladder's
+justification is demand headroom + measurement discipline, not a feared "budget reset".)
 
 **Prerequisites:** ≥15 conv/30d to run tROAS at all, **≥50 conv/30d before tightening** (and before each
 subsequent step). Below that, the campaign learns nothing stable — consolidate / grow volume first, don't set a
@@ -411,7 +415,10 @@ raise but recovers within ~2 weeks → hold and continue; if it never recovers i
 stable budget.
 
 **tROAS steps:** tighten **+10–15%** / loosen **−15–20%** per step, wait **≥14 days** (1–2 conversion cycles;
-longer if conversion lag >5 days). A change **>15–20%** triggers a full learning reset — keep steps small.
+longer if conversion lag >5 days). Keep steps small: a target edit IS a bid-strategy setting change (the one
+category Google's Learning-trigger list does cover), and a big jump makes the next 2 weeks of results
+unreadable. The 10–20% step size itself is practitioner consensus, no official threshold exists (Google's
+Search guidance even says targets may be changed freely).
 Tighten only after 14+ days at/above the current target; loosen only when ROAS is >20% above target for 14+ days
 AND budget scaling is already maxed.
 
@@ -421,7 +428,7 @@ judging); wait for 50 conv/30d before each step.
 
 **Don't break what works — freeze everything else during the 7–14d learning window:** no new ad groups, no
 bulk keyword pauses, no sweeping copy changes, no targeting/structure edits. Use **seasonality adjustments** for
-short events (≤14 days — they don't reset learning and expire automatically) instead of a temporary target
+short events (≤14 days — the sanctioned way to pre-inform Smart Bidding, and they expire automatically) instead of a temporary target
 change; use **data exclusions** to scrub outages/tracking-gaps/one-off spikes so the model doesn't learn a
 distorted baseline.
 
